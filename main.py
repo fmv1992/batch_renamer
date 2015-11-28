@@ -15,7 +15,7 @@ import logging
 import argparse
 import os
 from batch_renamer import trimm_filename, trimm_foldername
-from utilities.string_utilities import split_folder_and_filename, get_last_dir,\
+from utilities.string_utilities import split_folder_and_filename, get_last_dir,
 split_filename_and_extension
 
 # parsing
@@ -40,6 +40,7 @@ if os.path.isdir(args.input) is True or \
        pass
 else:
      raise Exception('Input path does not exist')
+     
 # logging
 if args.verbose is True:
     logging.basicConfig(format='%(levelname)s:%(asctime)s:%(message)s',
