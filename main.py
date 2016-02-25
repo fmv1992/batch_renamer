@@ -15,7 +15,7 @@ import logging
 import argparse
 import os
 from batch_renamer import trimm_filename, trimm_foldername
-from utilities.string_utilities import split_folder_and_filename, get_last_dir,
+from utilities.string_utilities import split_folder_and_filename, get_last_dir,\
 split_filename_and_extension
 
 # parsing
@@ -86,10 +86,16 @@ else:
                         split_filename_and_extension(key)[0] + '_' + \
                         str('{0:02d}'.format(i)) + \
                         split_filename_and_extension(one_dup_file)[1]
-                    os.rename(one_dup_file, destination_path)
+                    try:
+                        os.rename(one_dup_file, destination_path)
+                    except PermissionError:
+                        print('Permission error for', one_dup_file)
             else:
                 #print(repr(item[0]), '->', repr(key))
-                os.rename(item[0], key)
+                try:
+                    os.rename(item[0], key)
+                except PermissionError:
+                    print('Permission error for', item[0])
         duplicate_filenames = {}
         # fix subdirs
         for subdir in subdirs:
@@ -121,5 +127,8 @@ else:
                     os.rename(one_dup_file, key)
             else:
                 #print(repr(item[0]), '->', repr(key))
-                os.rename(item[0], key)
+                try:
+                    os.rename(item[0], key)
+                except PermissionError:
+                    print('Permission error for', item[0])
         duplicate_foldernames = {}
