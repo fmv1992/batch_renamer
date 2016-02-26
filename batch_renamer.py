@@ -4,65 +4,45 @@ Created on Tue Sep  8 21:41:03 2015
 
 @author: monteiro
 
-Description: renames all files (except pdfs) and folders allowing only ascii
-letters, numbers and underlines.
-For pdfs if the string '_-_' is present, preserve the first part of the string
-as uppercase names and processes the rest.
+Description: renames all files; simple as that
 """
-import os
-import string
-import unidecode
 import re
+import os
 
-und_dash_und = re.compile('\_\-\_')
+try:
+    from unidecode import unidecode
+except ImportError:
+    def unidecode(x):
+        return re.sub('\W', '', x, re.ASCII)
 
-def trimm_filename(x):
+
+def clean_name(x):
     """
-    Processes file name allowing some non ascii characters present in
-    allowed.
-    """
-    # general multi purpose decoding of invalid characters
-    x_decoded = unidecode.unidecode(x)
-    # translates string into alphanum and '-' , '_', '.' enabled chars
-    x_decoded = re.sub('[^\-\_\.A-Za-z0-9]+', '_', x_decoded)
-    # removes double underline occurences
-    x_decoded = re.sub('\_+', '_', x_decoded)
-    # substitutes every occurence of '.' except the last; .tar.gz DONT'T DO THAT
-    #x_decoded = re.sub('\.(?=.*\.)', '', x_decoded)
-    # splits filename and extension
-    filename = re.match('.*?(?=\.)', x_decoded)
-    extension = re.search('(?<=\.).+', x_decoded)
-    # processes extension
-    if extension:
-        extension = extension.group(0).lower()
-    # processes filename without extension
-    if filename is None:
-        filename = x_decoded
-    else:
-        filename = filename.group(0)
-        # converts to lowercase
-    filename = filename.lower()
-        # don't allow last character to be special, neither the first
-    filename = re.sub('[^a-zA-Z0-9]+$', '', filename)
-    filename = re.sub('^[^a-zA-Z0-9]+', '', filename)
-    if extension is None:
-        new_string = filename
-    else:
-        new_string = filename + '.' + extension
-    return new_string
 
-def trimm_foldername(x):
-    """Processes folder name allowing some non ascii characters."""
-    # general multi purpose decoding of invalid characters
-    x_decoded = unidecode.unidecode(x)
-    # translates string into alphanum and '-' , '_', '.' enabled chars
-    x_decoded = re.sub('[^\-\_\.A-Za-z0-9]', '_', x_decoded)
-        # don't allow last character to be special, neither the first
-    x_decoded = re.sub('[^a-zA-Z0-9]+$', '', x_decoded)
-    x_decoded = re.sub('^[^a-zA-Z0-9]+', '', x_decoded)
-    # removes double underline occurences
-    x_decoded = re.sub('\_+', '_', x_decoded)
-    new_string = x_decoded
-    return new_string
-    
-    
+    """
+    x = unidecode(x).lower()
+    # changes any symbol for '_'
+    x = re.sub('(_+|[^\-\.A-Za-z0-9]+)', '_', x)
+    x = re.sub('_(?=\.[^.]+$)', '', x)  # removes any trailing '_'
+    x = re.sub('_+$', '', x)
+    return x
+
+
+def if_it_does_not_exist_then_rename(parent_path, old_name, new_name,
+                                     ):
+    i = 0
+    while os.path.isfile(os.path.join(parent_path, new_name)) is True:
+        new_name = re.sub('[0-9]+\.(?=[^.]+$)',
+                          str('{0:02d}.'.format(i)),
+                          new_name)
+        i += 1
+    while os.path.isdir(os.path.join(parent_path, new_name)) is True:
+        new_name = re.sub('[0-9]+\.(?=[^.]+$)',
+                          str('{0:02d}.'.format(i)),
+                          new_name)
+        i += 1
+    # do the renaming
+    print(old_name, '|->', new_name)
+    os.rename(os.path.join(parent_path, old_name),
+              os.path.join(parent_path, new_name))
+    return True
