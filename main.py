@@ -25,7 +25,7 @@ parser.add_argument('--input', help='input path for file or folder to be'
                         '$HOME/bin/git/batch_renamer/example'),
                     required=False)
 parser.add_argument('--historyfile', help='destination of the history file',
-                    default=os.path.expandvars('$HOME/bin/git/batch_renamer/'
+                    default=os.path.expandvars('$HOME/bin/python/batch_renamer/'
                                                'history_file.txt'),
                     required=False)
 # in case the argument is given without the input option
