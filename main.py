@@ -47,7 +47,7 @@ args.input = os.path.abspath(args.input)
 args.historyfile = os.path.abspath(args.historyfile)
 if not os.path.exists(args.historyfile):
     with open(args.historyfile, 'wt') as f:
-        f.write(0)
+        f.write('')
 # logging
 if args.verbose is True:
     logging.basicConfig(format='%(levelname)s:%(asctime)s:%(message)s',
