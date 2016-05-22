@@ -78,12 +78,16 @@ with args.historyfile.open('at') as history_file:
                         src = os.path.join(root_dir, file_n)
                         history_file.write('mv \'{0}\' \'{1}\'\n'.format(dst, src))
                         os.rename(src, dst)
-                for dir_n in subdirs:
+            for dir_n in subdirs:
+                for exclude_pattern in excluded_patterns:
+                    if re.search(exclude_pattern, os.path.join(root_dir, file_n)):
+                        break
+                else:
                     primitive_n = primitive_name(os.path.join(root_dir, dir_n))
                     # if the new name is different than the actual name
                     if primitive_n != os.path.join(root_dir, dir_n):
                         # if new name exists add a trailing number to new file
-                        if os.path.exists(primitive_n):
+                        if os.path.isdir(primitive_n):
                             dst = os.path.join(root_dir,
                                                add_trailing_number(primitive_n))
                         else:
@@ -91,3 +95,19 @@ with args.historyfile.open('at') as history_file:
                         src = os.path.join(root_dir, dir_n)
                         history_file.write('mv \'{0}\' \'{1}\'\n'.format(dst, src))
                         os.rename(src, dst)
+
+# if it is a file and also the input itself
+with args.historyfile.open('at') as history_file:
+    history_file.write('NEW ENTRY: ' + time.ctime() + '\n')
+    file_n = os.path.join(*args.input.parts)
+    for exclude_pattern in excluded_patterns:
+        if re.search(exclude_pattern, file_n):
+            raise SystemExit(0)
+    else:
+        file_n = primitive_name(file_n)
+        if  os.path.exists(file_n):
+            dst = add_trailing_number(primitive_n)
+        src = os.path.join(*args.input.parts)
+        dst = file_n
+        history_file.write('mv \'{0}\' \'{1}\'\n'.format(dst, src))
+        os.rename(src, dst)

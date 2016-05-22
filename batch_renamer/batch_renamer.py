@@ -45,6 +45,8 @@ def primitive_name(x, add_trailing_numbers=False):
     basename = re.sub('_+$', '', basename)
     # Removes any sequence of '_' except at the start of the string
     basename = re.match('_*', basename).group() + re.sub('_+', '_', re.sub('(_*)([^_].+)', '\\2', basename))
+    if basename == '':
+        basename = 'empty_name_after_e
     return os.path.join(os.path.dirname(x), basename)
 
 
@@ -54,30 +56,27 @@ def add_trailing_number(x):
     file with that name.
     """
     basename = os.path.basename(x)
-    if os.path.isfile(os.path.join(os.path.dirname(x), basename)):
-            i = 0
-            while os.path.isfile(os.path.join(
-                                 os.path.dirname(x), basename)) is True:
-                if '.' in basename:
-                    basename = re.sub('\.',
-                                      str('_{0:02d}.'.format(i)),
-                                      basename, count=1)
-                elif re.match('[0-9][0-9]$', basename):
-                    basename = re.sub('[0-9][0-9]$',
-                                      str('{0:02d}'.format(i)),
-                                      basename, count=1)
-                else:
-                    basename += str('_{0:02d}'.format(i))
-                i += 1
-    elif os.path.isdir(os.path.join(os.path.dirname(x), basename)):
-            i = 0
-            while os.path.isdir(os.path.join(
-                                os.path.dirname(x), basename)) is True:
-                if re.match('[0-9][0-9]$', basename):
-                    basename = re.sub('[0-9][0-9]$',
-                                      str('{0:02d}'.format(i)),
-                                      basename, count=1)
-                else:
-                    basename += str('_{0:02d}'.format(i))
-                i += 1
+    # Takes into account that a file could already be names with '_00.txt' for
+    # example. This instead of creating "_00_00" it considers that sufix.
+
+    # for the case that has an extension
+    if '.' in basename:
+        basename = re.sub('_[0-9]{2,3}(?=.[a-zA-Z0-9]+[\.a-zA-Z0-9]+$)', '', basename)
+        i = 0
+        while os.path.isfile(os.path.join(
+                             os.path.dirname(x), basename)) is True:
+            basename = re.sub('_[0-9]{2,3}(?=.[a-zA-Z0-9]+[\.a-zA-Z0-9]+$)', '', basename)
+            basename = re.search('^[^\.]*', basename).group() + '_{0:02d}'.format(i) + re.search('\.[a-zA-Z0-9]+[\.a-zA-Z0-9]+$', basename).group()
+            i += 1
+#    elif os.path.isdir(os.path.join(os.path.dirname(x), basename)):
+#            i = 0
+#            while os.path.isdir(os.path.join(
+#                                os.path.dirname(x), basename)) is True:
+#                if re.match('[0-9][0-9]$', basename):
+#                    basename = re.sub('[0-9][0-9]$',
+#                                      str('{0:02d}'.format(i)),
+#                                      basename, count=1)
+#                else:
+#                    basename += str('_{0:02d}'.format(i))
+#                i += 1
     return os.path.join(os.path.dirname(x), basename)
