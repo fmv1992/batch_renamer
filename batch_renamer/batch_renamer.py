@@ -59,7 +59,6 @@ def add_trailing_number(x):
     file with that name.
     """
     basename = os.path.basename(x)
-    print('bn', basename)
     # Takes into account that a file could already be names with '_00.txt' for
     # example. This instead of creating "_00_00" it considers that sufix.
 
