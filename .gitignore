@@ -2,3 +2,5 @@ __pycache__/
 __not_for_packaging/
 history_file.txt
 .*~
+exclude_re_patterns.txt
+__not_for_packaging.tar

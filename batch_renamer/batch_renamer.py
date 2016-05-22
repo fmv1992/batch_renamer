@@ -4,7 +4,14 @@ Created on Tue Sep  8 21:41:03 2015
 
 @author: monteiro
 
-Description: renames all files; simple as that
+Description: renames files according to some rules:
+RULES:
+1) There are exceptions. File names that match those exceptions are ignored.
+2) Transliterate Unicode text into plain 7-bit ASCII if the 'unicode' module is
+present.
+3) Changes uppercase to lower case.
+4) Remove spaces and other symbols and puts underlines in their place.
+
 """
 import re
 import os
@@ -18,23 +25,33 @@ except ImportError:
 
 def primitive_name(x, add_trailing_numbers=False):
     """
-
+    Creates a primitive name from string x.
     """
+    # Transliterate Unicode text into plain 7-bit ASCII if 'unicode' module is
+    # present
     basename = unidecode(os.path.basename(x)).lower()
-    # changes not allowed chars for '_'
-    basename = re.sub('[^0-9a-zA-Z\_\.]', '_', basename)
-    # removes any trailing '_' before extension
+    # Changes a sequence of symbols for a single underline if it is not
+    # adjacent to an underline. In this case obliterates the symbol.
+    # Symbols are any character which is not a letter, nor a number nor '.' and
+    # '_'
+    for found_patterns in re.findall('''(?<=_)[^0-9a-zA-Z\_\.]+  #
+                                     |                           #
+                                     [^0-9a-zA-Z\_\.]+(?=_)''', basename, re.VERBOSE):
+        basename = basename.replace(found_patterns, '')
+    basename = re.sub('[^0-9a-zA-Z\_\.]+', '_', basename)
+    # Removes any trailing '_' before extension
     basename = re.sub('_(?=\.[^.]+$)', '', basename)
-    # removes any trailing '_'
+    # Removes any trailing '_'
     basename = re.sub('_+$', '', basename)
-    # removes any sequence of '_' except at the start of the string
-    basename = re.sub('(?<=[^^])_+', '_', basename)
+    # Removes any sequence of '_' except at the start of the string
+    basename = re.match('_*', basename).group() + re.sub('_+', '_', re.sub('(_*)([^_].+)', '\\2', basename))
     return os.path.join(os.path.dirname(x), basename)
 
 
 def add_trailing_number(x):
     """
-
+    Adds a trailing number to string over and over again until there is not a
+    file with that name.
     """
     basename = os.path.basename(x)
     if os.path.isfile(os.path.join(os.path.dirname(x), basename)):
