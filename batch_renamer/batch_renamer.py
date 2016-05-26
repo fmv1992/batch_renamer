@@ -6,11 +6,10 @@ Created on Tue Sep  8 21:41:03 2015
 
 Description: renames files according to some rules:
 RULES:
-1) There are exceptions. File names that match those exceptions are ignored.
-2) Transliterate Unicode text into plain 7-bit ASCII if the 'unicode' module is
+1) Transliterate Unicode text into plain 7-bit ASCII if the 'unicode' module is
 present.
-3) Changes uppercase to lower case.
-4) Remove spaces and other symbols and puts underlines in their place.
+2) Changes uppercase to lower case.
+3) Remove spaces and other symbols and puts underlines in their place.
 
 """
 import re
@@ -36,7 +35,8 @@ def primitive_name(x, add_trailing_numbers=False):
     # '_'
     for found_patterns in re.findall('''(?<=_)[^0-9a-zA-Z\_\.]+  #
                                      |                           #
-                                     [^0-9a-zA-Z\_\.]+(?=_)''', basename, re.VERBOSE):
+                                     [^0-9a-zA-Z\_\.]+(?=_)''',
+                                     basename, re.VERBOSE):
         basename = basename.replace(found_patterns, '')
     # Removes the first char if it is a symbol
     basename = re.sub('^[^0-9a-zA-Z\_\.]+', '', basename)
@@ -47,7 +47,8 @@ def primitive_name(x, add_trailing_numbers=False):
     # Removes any trailing '_'
     basename = re.sub('_+$', '', basename)
     # Removes any sequence of '_' except at the start of the string
-    basename = re.search('^_*', basename).group() + re.sub('_+', '_', re.sub('(_*)([^_].+)', '\\2', basename))
+    basename = re.search('^_*', basename).group() +                           \
+               re.sub('_+', '_', re.sub('(_*)([^_].+)', '\\2', basename))
     if basename == '':
         basename = 'empty_name_after_e'
     return os.path.join(os.path.dirname(x), basename)
@@ -64,12 +65,17 @@ def add_trailing_number(x):
 
     # for the case that has an extension
     if '.' in basename:
-        basename = re.sub('_[0-9]{2,3}(?=.[a-zA-Z0-9]+[\.a-zA-Z0-9]+$)', '', basename)
+        basename = re.sub('_[0-9]{2,3}(?=.[a-zA-Z0-9]+[\.a-zA-Z0-9]+$)', '',
+                          basename)
         i = 0
         while os.path.isfile(os.path.join(
                              os.path.dirname(x), basename)) is True:
-            basename = re.sub('_[0-9]{2,3}(?=.[a-zA-Z0-9]+[\.a-zA-Z0-9]+$)', '', basename)
-            basename = re.search('^[^\.]*', basename).group() + '_{0:02d}'.format(i) + re.search('\.[a-zA-Z0-9]+[\.a-zA-Z0-9]+$', basename).group()
+            basename = re.sub('_[0-9]{2,3}(?=.[a-zA-Z0-9]+[\.a-zA-Z0-9]+$)',
+                              '', basename)
+            basename = re.search('^[^\.]*', basename).group() +               \
+                       '_{0:02d}'.format(i) +                                 \
+                       re.search('\.[a-zA-Z0-9]+[\.a-zA-Z0-9]+$',
+                                 basename).group()
             i += 1
     else:
         i = 0
