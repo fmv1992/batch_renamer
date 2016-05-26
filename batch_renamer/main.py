@@ -18,13 +18,18 @@ import pathlib
 from batch_renamer import primitive_name, add_trailing_number
 import re
 
+#if __name__ == '__main__':
+    #print(os.path.getmtime(__file__))
+    #raise Exception
+
 two_level_parent_folder = pathlib.Path(os.path.abspath(__file__)).parents[1]
 
 # Parsing block
 parser = argparse.ArgumentParser()
 parser.add_argument('--verbose',
                     help='Puts the program in verbose mode.',
-                    action="store_true", default=False)
+                    action="store_true",
+                    default=False)
 parser.add_argument('--input', help='Input path for file or folder to be '
                     'renamed.',
                     required=True)
@@ -37,10 +42,17 @@ parser.add_argument('--excludepatternfile',
                     help='Exclude re patterns in the file.',
                     default=two_level_parent_folder/'exclude_re_patterns.txt',
                     required=False)
+parser.add_argument('--prefixisomoddate',
+                    help='Prefixes the filename with its last modified date '
+                    'in ISO format: YYYYMMDD. It does not apply to folders.',
+                    action="store_true",
+                    default=False)
 
 # Checking parsed args and correcting
 args = parser.parse_args()
 args.input = pathlib.Path(os.path.abspath(args.input))
+if args.prefixisomoddate:
+    import datetime
 # If args.historyfile is not default it need to be converted to pathlib.Path
 args.historyfile = pathlib.Path(os.path.abspath(args.historyfile))
 if args.input.is_file() is True or args.input.is_dir() is True:
@@ -77,7 +89,12 @@ with args.historyfile.open('at') as history_file:
                     primitive_n = primitive_name(os.path.join(root_dir,
                                                               file_n))
                     # If the new name is different than the actual name
-                    if primitive_n != os.path.join(root_dir, file_n):
+                    # or the prefixisomoddate flag is True
+                    if primitive_n != os.path.join(root_dir, file_n) or args.prefixisomoddate is True:
+                        if args.prefixisomoddate:
+                            time = datetime.datetime.fromtimestamp(
+                                                         os.path.getmtime(os.path.join(root_dir, file_n)))
+                            primitive_n = os.path.join(os.path.dirname(primitive_n), time.strftime('%Y%m%d_') + os.path.basename(primitive_n))
                         # If new name exists add a trailing number to new file
                         if os.path.exists(primitive_n):
                             dst = os.path.join(
