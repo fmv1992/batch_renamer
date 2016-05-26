@@ -90,11 +90,15 @@ with args.historyfile.open('at') as history_file:
                                                               file_n))
                     # If the new name is different than the actual name
                     # or the prefixisomoddate flag is True
-                    if primitive_n != os.path.join(root_dir, file_n) or args.prefixisomoddate is True:
-                        if args.prefixisomoddate:
+                    if args.prefixisomoddate is True:
+                        if re.search('\/[0-9]{8}_[^\/].*',
+                                                          primitive_n) is None:
                             time = datetime.datetime.fromtimestamp(
-                                                         os.path.getmtime(os.path.join(root_dir, file_n)))
-                            primitive_n = os.path.join(os.path.dirname(primitive_n), time.strftime('%Y%m%d_') + os.path.basename(primitive_n))
+                              os.path.getmtime(os.path.join(root_dir, file_n)))
+                            primitive_n = os.path.join(
+                                                  os.path.dirname(primitive_n),
+                      time.strftime('%Y%m%d_') + os.path.basename(primitive_n))
+                    if primitive_n != os.path.join(root_dir, file_n):
                         # If new name exists add a trailing number to new file
                         if os.path.exists(primitive_n):
                             dst = os.path.join(
