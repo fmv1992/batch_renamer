@@ -37,7 +37,7 @@ parser.add_argument('--historyfile',
                     help='Destination of the history file. This file records'
                     'any changes to allow the user to revert them if needed.',
                     default=two_level_parent_folder/'history_file.txt',
-                    required=False)
+                    required=True)
 parser.add_argument('--excludepatternfile',
                     help='Exclude re patterns in the file.',
                     default=two_level_parent_folder/'exclude_re_patterns.txt',
@@ -51,6 +51,8 @@ parser.add_argument('--prefixisomoddate',
 # Checking parsed args and correcting
 args = parser.parse_args()
 args.input = pathlib.Path(os.path.abspath(args.input))
+args.excludepatternfile = pathlib.Path(os.path.abspath(args.excludepatternfile))
+
 if args.prefixisomoddate:
     import datetime
 # If args.historyfile is not default it need to be converted to pathlib.Path
@@ -68,12 +70,15 @@ if args.verbose is True:
     logging.basicConfig(format='%(levelname)s:%(asctime)s:%(message)s',
                         level=logging.INFO, datefmt='%Y/%m/%d %H:%M:%S')
 
-with args.excludepatternfile.open('rt') as excludepatternfile:
-    excluded_patterns = excludepatternfile.read().splitlines()
-    excluded_patterns = list(
-                        filter(
-                        lambda x: False if re.search('^\#', x) else True,
-                        excluded_patterns))
+if args.excludepatternfile.is_file():
+    with args.excludepatternfile.open('rt') as excludepatternfile:
+        excluded_patterns = excludepatternfile.read().splitlines()
+        excluded_patterns = list(
+                            filter(
+                            lambda x: False if re.search('^\#', x) else True,
+                            excluded_patterns))
+else:
+    excluded_patterns = []
 
 with args.historyfile.open('at') as history_file:
         history_file.write('NEW ENTRY: ' + time.ctime() + '\n')
