@@ -10,3 +10,7 @@ There is a file called 'exclude_re_patterns.txt' which is a list of line separat
     #
     # ignores any path containing the '.git' pattern
     .*\.git.*
+
+## TODO
+- include an example in this readme
+
