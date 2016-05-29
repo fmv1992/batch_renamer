@@ -52,14 +52,14 @@ parser.add_argument('--prefixisomoddate',
 # Checking parsed args and correcting
 args = parser.parse_args()
 args.input = pathlib.Path(os.path.abspath(args.input))
-if type(args.excludepatternfile) is str:
+if isinstance(args.excludepatternfile, str):
     args.excludepatternfile = pathlib.Path(os.path.abspath(
                                                       args.excludepatternfile))
 
 if args.prefixisomoddate:
     import datetime
 # If args.historyfile is not default it need to be converted to pathlib.Path
-if type(args.historyfile) is str:
+if isinstance(args.historyfile, str):
     args.historyfile = pathlib.Path(os.path.abspath(args.historyfile))
 if args.input.is_file() is True or args.input.is_dir() is True:
     pass
