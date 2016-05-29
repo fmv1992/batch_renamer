@@ -47,8 +47,8 @@ def primitive_name(x, add_trailing_numbers=False):
     # Removes any trailing '_'
     basename = re.sub('_+$', '', basename)
     # Removes any sequence of '_' except at the start of the string
-    basename = re.search('^_*', basename).group() +                           \
-               re.sub('_+', '_', re.sub('(_*)([^_].+)', '\\2', basename))
+    basename = re.search('^_*', basename).group()                             \
+        + re.sub('_+', '_', re.sub('(_*)([^_].+)', '\\2', basename))
     if basename == '':
         basename = 'empty_name_after_e'
     return os.path.join(os.path.dirname(x), basename)
@@ -72,17 +72,14 @@ def add_trailing_number(x):
                              os.path.dirname(x), basename)) is True:
             basename = re.sub('_[0-9]{2,3}(?=.[a-zA-Z0-9]+[\.a-zA-Z0-9]+$)',
                               '', basename)
-            basename = re.search('^[^\.]*', basename).group() +               \
-                       '_{0:02d}'.format(i) +                                 \
-                       re.search('\.[a-zA-Z0-9]+[\.a-zA-Z0-9]+$',
-                                 basename).group()
+            basename = re.search('^[^\.]*', basename).group()                 \
+                + '_{0:02d}'.format(i)                                        \
+                + re.search('\.[a-zA-Z0-9]+[\.a-zA-Z0-9]+$', basename).group()
             i += 1
     else:
         i = 0
-        while os.path.isdir(os.path.join(
-                            os.path.dirname(x), basename)) is True or         \
-              os.path.isfile(os.path.join(
-                            os.path.dirname(x), basename)) is True:
+        while (os.path.isdir(os.path.join(os.path.dirname(x), basename)) or
+                os.path.isfile(os.path.join(os.path.dirname(x), basename))):
             if re.search('[0-9][0-9]$', basename):
                 basename = re.sub('[0-9][0-9]$',
                                   str('{0:02d}'.format(i)),

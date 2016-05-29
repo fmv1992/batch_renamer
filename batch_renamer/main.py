@@ -52,14 +52,14 @@ parser.add_argument('--prefixisomoddate',
 # Checking parsed args and correcting
 args = parser.parse_args()
 args.input = pathlib.Path(os.path.abspath(args.input))
-if type(args.excludepatternfile) is str:
+if isinstance(args.excludepatternfile, str):
     args.excludepatternfile = pathlib.Path(os.path.abspath(
-                                                      args.excludepatternfile))
+        args.excludepatternfile))
 
 if args.prefixisomoddate:
     import datetime
 # If args.historyfile is not default it need to be converted to pathlib.Path
-if type(args.historyfile) is str:
+if isinstance(args.historyfile, str):
     args.historyfile = pathlib.Path(os.path.abspath(args.historyfile))
 if args.input.is_file() is True or args.input.is_dir() is True:
     pass
@@ -78,16 +78,16 @@ if args.excludepatternfile.is_file():
     with args.excludepatternfile.open('rt') as excludepatternfile:
         excluded_patterns = excludepatternfile.read().splitlines()
         excluded_patterns = list(
-                            filter(
-                            lambda x: False if re.search('^\#', x) else True,
-                            excluded_patterns))
+            filter(
+                lambda x: False if re.search('^\#', x) else True,
+                excluded_patterns))
 else:
     excluded_patterns = []
 
 with args.historyfile.open('at') as history_file:
         history_file.write('NEW ENTRY: ' + time.ctime() + '\n')
         for (root_dir, subdirs, file_names) in                                \
-                       os.walk(os.path.join(*args.input.parts), topdown=False):
+                os.walk(os.path.join(*args.input.parts), topdown=False):
             for file_n in file_names:
                 # Ignore patterns in 'exclude_re_patterns'
                 for exclude_pattern in excluded_patterns:
@@ -101,17 +101,19 @@ with args.historyfile.open('at') as history_file:
                     # or the prefixisomoddate flag is True
                     if args.prefixisomoddate is True:
                         if re.search('\/[0-9]{8}_[^\/].*',
-                                                          primitive_n) is None:
+                                     primitive_n) is None:
                             time = datetime.datetime.fromtimestamp(
-                              os.path.getmtime(os.path.join(root_dir, file_n)))
+                                os.path.getmtime(os.path.join(
+                                    root_dir, file_n)))
                             primitive_n = os.path.join(
-                                                  os.path.dirname(primitive_n),
-                      time.strftime('%Y%m%d_') + os.path.basename(primitive_n))
+                                os.path.dirname(primitive_n),
+                                time.strftime('%Y%m%d_')
+                                + os.path.basename(primitive_n))
                     if primitive_n != os.path.join(root_dir, file_n):
                         # If new name exists add a trailing number to new file
                         if os.path.exists(primitive_n):
                             dst = os.path.join(
-                                    root_dir, add_trailing_number(primitive_n))
+                                root_dir, add_trailing_number(primitive_n))
                         else:
                             dst = os.path.join(root_dir, primitive_n)
                         src = os.path.join(root_dir, file_n)
@@ -130,7 +132,7 @@ with args.historyfile.open('at') as history_file:
                         # If new name exists add a trailing number to new file
                         if os.path.isdir(primitive_n):
                             dst = os.path.join(
-                                    root_dir, add_trailing_number(primitive_n))
+                                root_dir, add_trailing_number(primitive_n))
                         else:
                             dst = os.path.join(root_dir, primitive_n)
                         src = os.path.join(root_dir, dir_n)
