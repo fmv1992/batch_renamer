@@ -34,17 +34,18 @@ parser.add_argument('--input', help='Input path for file or folder to be '
                     'renamed.',
                     required=True)
 parser.add_argument('--historyfile',
-                    help='Destination of the history file. This file records'
+                    help='Destination of the history file. This file records '
                     'any changes to allow the user to revert them if needed.',
                     default=two_level_parent_folder/'history_file.txt',
                     required=False)
 parser.add_argument('--excludepatternfile',
-                    help='Exclude re patterns in the file.',
+                    help='Do not rename files whose full path is a '
+                    'match in any of the re contained in this file.',
                     default=two_level_parent_folder/'exclude_re_patterns.txt',
                     required=False)
 parser.add_argument('--prefixisomoddate',
                     help='Prefixes the filename with its last modified date '
-                    'in ISO format: YYYYMMDD. It does not apply to folders.',
+                    'in ISO format: YYYYMMDD_. It does not apply to folders.',
                     action="store_true",
                     default=False)
 

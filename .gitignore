@@ -1,7 +1,6 @@
 __pycache__/
 __not_for_packaging/
 *~
-personal_exclude_re_patterns.txt
-personal_history_file.txt
-history_file.txt
 __not_for_packaging.tar
+personal_excludepatternfile.txt
+personal_historyfile.txt
