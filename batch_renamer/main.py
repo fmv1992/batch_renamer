@@ -37,7 +37,7 @@ parser.add_argument('--historyfile',
                     help='Destination of the history file. This file records'
                     'any changes to allow the user to revert them if needed.',
                     default=two_level_parent_folder/'history_file.txt',
-                    required=True)
+                    required=False)
 parser.add_argument('--excludepatternfile',
                     help='Exclude re patterns in the file.',
                     default=two_level_parent_folder/'exclude_re_patterns.txt',
@@ -51,12 +51,15 @@ parser.add_argument('--prefixisomoddate',
 # Checking parsed args and correcting
 args = parser.parse_args()
 args.input = pathlib.Path(os.path.abspath(args.input))
-args.excludepatternfile = pathlib.Path(os.path.abspath(args.excludepatternfile))
+if type(args.excludepatternfile) is str:
+    args.excludepatternfile = pathlib.Path(os.path.abspath(
+                                                      args.excludepatternfile))
 
 if args.prefixisomoddate:
     import datetime
 # If args.historyfile is not default it need to be converted to pathlib.Path
-args.historyfile = pathlib.Path(os.path.abspath(args.historyfile))
+if type(args.historyfile) is str:
+    args.historyfile = pathlib.Path(os.path.abspath(args.historyfile))
 if args.input.is_file() is True or args.input.is_dir() is True:
     pass
 else:
@@ -147,5 +150,6 @@ with args.historyfile.open('at') as history_file:
             dst = add_trailing_number(primitive_n)
         src = os.path.join(*args.input.parts)
         dst = file_n
-        history_file.write('mv \'{0}\' \'{1}\'\n'.format(dst, src))
-        os.rename(src, dst)
+        if src != dst:
+            history_file.write('mv \'{0}\' \'{1}\'\n'.format(dst, src))
+            os.rename(src, dst)
