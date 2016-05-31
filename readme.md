@@ -87,3 +87,6 @@ Using the follwing exclude_re_patterns.txt file:
 	.*\/\..*
 	# ignores files/folders whose filename starts with a '.' (in windows)
 	.*\/\\..*
+
+## TODO
+- add test module
