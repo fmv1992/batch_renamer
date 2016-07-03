@@ -89,4 +89,8 @@ Using the follwing exclude_re_patterns.txt file:
 	.*\/\\..*
 
 ## TODO
+
 - add test module
+
+- Fix changing uppercase to lowercase on windows not being detected as change
+  such as 'Capulet' being renamed to 'capulet_00' instead of 'capulet'
