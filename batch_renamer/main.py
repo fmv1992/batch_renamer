@@ -117,9 +117,12 @@ with args.historyfile.open('at') as history_file:
                         else:
                             dst = os.path.join(root_dir, primitive_n)
                         src = os.path.join(root_dir, file_n)
-                        history_file.write('mv \'{0}\' \'{1}\'\n'.format(dst,
+                        try:
+                            os.rename(src, dst)
+                            history_file.write('mv \'{0}\' \'{1}\'\n'.format(dst,
                                                                          src))
-                        os.rename(src, dst)
+                        except PermissionError: 
+                            pass
             for dir_n in subdirs:
                 for exclude_pattern in excluded_patterns:
                     if re.search(exclude_pattern, os.path.join(root_dir,
@@ -136,9 +139,12 @@ with args.historyfile.open('at') as history_file:
                         else:
                             dst = os.path.join(root_dir, primitive_n)
                         src = os.path.join(root_dir, dir_n)
-                        history_file.write('mv \'{0}\' \'{1}\'\n'.format(dst,
+                        try:
+                            os.rename(src, dst)
+                            history_file.write('mv \'{0}\' \'{1}\'\n'.format(dst,
                                                                          src))
-                        os.rename(src, dst)
+                        except PermissionError: 
+                            pass
 
 # If it is a file and also the input itself
 with args.historyfile.open('at') as history_file:
