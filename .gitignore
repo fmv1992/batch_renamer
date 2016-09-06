@@ -4,3 +4,4 @@ __not_for_packaging/
 __not_for_packaging.tar
 personal_excludepatternfile.txt
 personal_historyfile.txt
+*personal*
