@@ -1,86 +1,89 @@
-# -*- coding: utf-8 -*-
-"""
-Created on october 30 2015
+u"""
+This module does a batch rename of your files according to specific rules.
 
-@author: monteiro
+Mainly it takes off special characters and dashes leaving only letters, numbers,
+underscores and periods.
 
-Description:
-    for files: renames the file accodingly
-    for folders:
-        1) iterates over folders renaming all files
-        2) iterates over subfolders renaming all sub folders
+Operation mode:
+    1) Iterates over folders, starting at the deepest depths and moving
+    backwards.
+    2) Renames files accordingly.
+    3) Renames subfolders.
+
 """
+
 import logging
 import argparse
 import os
 import time
-import pathlib
 from batch_renamer import primitive_name, add_trailing_number
 import re
 
-#if __name__ == '__main__':
-    #print(os.path.getmtime(__file__))
-    #raise Exception
+TWO_LEVEL_PARENT_FOLDER = os.path.abspath(os.path.dirname(
+    os.path.dirname(
+        __file__)))
 
-two_level_parent_folder = pathlib.Path(os.path.abspath(__file__)).parents[1]
+print('tlpf', TWO_LEVEL_PARENT_FOLDER)
 
-# Parsing block
+# Parsing block.
 parser = argparse.ArgumentParser()
-parser.add_argument('--verbose',
-                    help='Puts the program in verbose mode.',
-                    action="store_true",
-                    default=False)
-parser.add_argument('--input', help='Input path for file or folder to be '
-                    'renamed.',
-                    required=True)
-parser.add_argument('--historyfile',
-                    help='Destination of the history file. This file records '
-                    'any changes to allow the user to revert them if needed.',
-                    default=two_level_parent_folder/'history_file.txt',
-                    required=False)
-parser.add_argument('--excludepatternfile',
-                    help='Do not rename files whose full path is a '
-                    'match in any of the re contained in this file.',
-                    default=two_level_parent_folder/'exclude_re_patterns.txt',
-                    required=False)
-parser.add_argument('--prefixisomoddate',
-                    help='Prefixes the filename with its last modified date '
-                    'in ISO format: YYYYMMDD_. It does not apply to folders.',
-                    action="store_true",
-                    default=False)
+
+parser.add_argument(
+    '--verbose',
+    help='Puts the program in verbose mode.',
+    action="store_true",
+    default=False)
+
+parser.add_argument(
+    '--input',
+    help='Input path for file or folder to be renamed.',
+    required=True)
+
+parser.add_argument(
+    '--historyfile',
+    help='Destination of the history file. This file records any changes '
+    'to allow the user to revert them if needed.',
+    default=os.path.join(
+        TWO_LEVEL_PARENT_FOLDER,
+        'history_file.txt'),
+    required=False)
+
+parser.add_argument(
+    '--excludepatternfile',
+    help='Do not rename files whose full path is a '
+    'match in any of the re contained in this file.',
+    default=os.path.join(
+        TWO_LEVEL_PARENT_FOLDER,
+        'exclude_re_patterns.txt'),
+    required=False)
+
+parser.add_argument(
+    '--prefixisomoddate',
+    help='Prefixes the filename with its last modified date '
+    'in ISO format: YYYYMMDD_. It does not apply to folders.',
+    action="store_true",
+    default=False)
 
 # Checking parsed args and correcting
 args = parser.parse_args()
-args.input = pathlib.Path(os.path.abspath(args.input))
-if isinstance(args.excludepatternfile, str):
-    args.excludepatternfile = pathlib.Path(os.path.abspath(
-        args.excludepatternfile))
 
 if args.prefixisomoddate:
     import datetime
 # If args.historyfile is not default it need to be converted to pathlib.Path
-if isinstance(args.historyfile, str):
-    args.historyfile = pathlib.Path(os.path.abspath(args.historyfile))
-if args.input.is_file() is True or args.input.is_dir() is True:
-    pass
-else:
-    raise Exception('Path {0} does not exist'.format(args.input))
-if not args.historyfile.is_file():
-    with args.historyfile.open('at') as history_file:
-        history_file.write('')
+# TODO: check if file and dir exist
 
 # Logging
 if args.verbose is True:
     logging.basicConfig(format='%(levelname)s:%(asctime)s:%(message)s',
                         level=logging.INFO, datefmt='%Y/%m/%d %H:%M:%S')
 
-if args.excludepatternfile.is_file():
-    with args.excludepatternfile.open('rt') as excludepatternfile:
-        excluded_patterns = excludepatternfile.read().splitlines()
-        excluded_patterns = list(
-            filter(
-                lambda x: False if re.search('^\#', x) else True,
-                excluded_patterns))
+# if args.excludepatternfile.is_file():
+#     with args.excludepatternfile.open('rt') as excludepatternfile:
+#         excluded_patterns = excludepatternfile.read().splitlines()
+#         excluded_patterns = list(
+#             filter(
+#                 lambda x: False if re.search('^\#', x) else True,
+#                 excluded_patterns))
 else:
     excluded_patterns = []
 
@@ -121,7 +124,7 @@ with args.historyfile.open('at') as history_file:
                             os.rename(src, dst)
                             history_file.write('mv \'{0}\' \'{1}\'\n'.format(dst,
                                                                          src))
-                        except PermissionError: 
+                        except PermissionError:
                             pass
             for dir_n in subdirs:
                 for exclude_pattern in excluded_patterns:
@@ -143,7 +146,7 @@ with args.historyfile.open('at') as history_file:
                             os.rename(src, dst)
                             history_file.write('mv \'{0}\' \'{1}\'\n'.format(dst,
                                                                          src))
-                        except PermissionError: 
+                        except PermissionError:
                             pass
 
 # If it is a file and also the input itself
