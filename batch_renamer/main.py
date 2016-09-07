@@ -22,12 +22,7 @@ from batch_renamer import primitive_name, add_trailing_number
 import re
 
 def main():
-    TWO_LEVEL_PARENT_FOLDER = os.path.abspath(
-        os.path.dirname(
-            os.path.dirname(
-                __file__)))
-
-    # Parsing block.
+    # Variables parsing block.
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -38,6 +33,7 @@ def main():
 
     parser.add_argument(
         '--input',
+        nargs='+',  # Generates a list of input arguments.
         help='Input path for file or folder to be renamed.',
         required=True)
 
@@ -60,7 +56,13 @@ def main():
         action='store_true',
         default=False)
 
-    # TODO: add argument for dry run
+
+    parser.add_argument(
+        '--dryrun',
+        help='Print dummy commands to stdout without actually renaming '
+        'the files.',
+        action='store_true',
+        default=False)
 
     # Checking parsed args and correcting.
     args = parser.parse_args()
@@ -77,16 +79,35 @@ def main():
 
     # Expanding args attributes to full path.
     for atr in ['input', 'historyfile', 'excludepatternfile']:
-        setattr(args,
-                atr,
-                os.path.abspath(
-                   getattr(args, atr)))
+        if isinstance(getattr(args, atr), str):
+            setattr(args,
+                    atr,
+                    os.path.abspath(
+                    getattr(args, atr)))
+        elif isinstance(getattr(args, atr), list):
+            setattr(args,
+                    atr,
+                    list(map(
+                        os.path.abspath,
+                        getattr(args, atr))))
 
-    # Check if historyfile, excludepatternfile and input exist.
+    # Check if input, historyfile and excludepatternfile exist.
+    if not all(map(os.path.exists, args.input)):
+        raise FileNotFoundError('Some of the input paths does not exist')
+    else:
+        logging.info('Processing paths:\n\t{0}'.format(
+            '\n\t'.join(args.input)))
+
     if not os.path.isfile(args.historyfile):
-        raise FileNotFoundError
+        raise FileNotFoundError(
+            'History file {0} does not exist'.format(args.historyfile))
+    else:
+        logging.info('History file: {0}'.format(args.historyfile))
+
     if not os.path.isfile(args.excludepatternfile):
-        raise FileNotFoundError
+        raise FileNotFoundError(
+            'Exclude pattern file {0} does not exist'.format(
+                args.excludepatternfile))
     else:  # Initializes the excluded patterns list of file exists.
         with open(args.excludepatternfile, 'rt') as excludepatternfile:
             excluded_patterns = excludepatternfile.read().splitlines()
@@ -94,16 +115,23 @@ def main():
                 filter(
                     lambda x: False if re.search('^\#', x) else True,
                     excluded_patterns))
+        logging.info('Exclude pattern file: {0}'.format(
+            args.excludepatternfile))
         logging.info('Excluding the following patterns:\n\t{0}'.format(
             '\n\t'.join(excluded_patterns)))
-    if not os.path.exists(args.input):
-        raise FileNotFoundError
 
+
+    # Parsing the prefix iso mod date mode.
     if args.prefixisomoddate:
         import datetime
+        logging.info('Prefixing files according to \'yyymmdd_\'.')
+    # Logging messages for the remaining arguments: prefix iso mod date and
+    # dry run
+    if args.dryrun:
+        logging.info('Dry run mode: no actual changes will be made')
 
     raise Exception
-    # Write to log file.
+    # Write to history file.
     # Ignore patterns.
     # Take prefix iso mod date into account.
     # If not dry run:
