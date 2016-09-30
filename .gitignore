@@ -5,3 +5,5 @@ __not_for_packaging.tar
 personal_excludepatternfile.txt
 personal_historyfile.txt
 *personal*
+# This test should not be shipped with the program
+test.bash

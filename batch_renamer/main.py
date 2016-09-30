@@ -154,7 +154,6 @@ def main():
     if args.dryrun:
         logging.info('Dry run mode: no actual changes will be made')
 
-#    raise Exception
     # Write to history file.
     # Ignore patterns.
     # Take prefix iso mod date into account.
@@ -185,8 +184,6 @@ def main():
 
     with open(args.historyfile, 'at') as history_file:
         history_file.write('NEW ENTRY: ' + time.ctime() + '\n')
-        #
-        #
         # First filtering all the files that need to be renamed with
         # RE_COMPILED_NOT_ALLOWED_EXPR.
         # Then we filter the excluded patterns given in excludepatternfile in
@@ -198,24 +195,24 @@ def main():
             list_of_excl_regex_patterns)
         new_names = list(map(primitive_name, files_to_rename))
 
+        # Solve the duplicate names problem by first creating a default dict
+        # whose keys (primitive names) point to the number of indexes.
+        # By filtering ones with more than one index one can find out the
+        # duplicate names.
         duplicate_names = collections.defaultdict(list)
         for index, item in enumerate(new_names):
             duplicate_names[item].append(index)
         duplicate_names = {k:v for k, v in duplicate_names.items() if len(v)>1}
-#        print(duplicate_names)
+        # List is modified inplace: add the trailing number.
         for duplicate_indexes in duplicate_names.values():
             add_trailing_number(new_names, duplicate_indexes)
-#        print(new_names[15:19])
-#        print(new_names[19], new_names[20])
-# 'mv \'{0}\' \'{1}\'\n'.format(dst,
-#                                                                            src))
 
         list_of_file_renamings = []
         for src, dst in zip(files_to_rename, new_names):
             try:
                 os.rename(src, dst)
-                list_of_file_renamings.append(
-                    'mv \'{0}\' \'{1}\''.format(dst, src))
+                list_of_file_renamings.append('mv \'{0}\' \'{1}\''.format(dst, src))
+                logging.info('mv \'{1}\' \'{0}\''.format(dst, src))
             except PermissionError:
                 pass
 
