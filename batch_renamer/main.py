@@ -17,12 +17,13 @@ Operation mode:
 import logging
 import argparse
 import os
+import shutil
 import time
 import collections  # Used to find duplicate values and thus add
                     # a suffix accordingly.
 import re
 from batch_renamer import primitive_name, add_trailing_number, \
-    filter_out_paths_to_be_renamed
+    filter_out_paths_to_be_renamed, directory_generation_starting_from_files
 
 
 def main():
@@ -189,32 +190,35 @@ def main():
         # Then we filter the excluded patterns given in excludepatternfile in
         # list_of_excl_regex_patterns.
         # Both are accomplisshed in one step.
-        files_to_rename = filter_out_paths_to_be_renamed(
-            input_args['files'],
-            RE_COMPILED_NOT_ALLOWED_EXPR,
-            list_of_excl_regex_patterns)
-        new_names = list(map(primitive_name, files_to_rename))
+        for recurse in directory_generation_starting_from_files(
+                input_args['files'],
+                input_args['folders']):
+            paths_to_rename = filter_out_paths_to_be_renamed(
+                recurse,
+                RE_COMPILED_NOT_ALLOWED_EXPR,
+                list_of_excl_regex_patterns)
+            new_names = list(map(primitive_name, paths_to_rename))
 
-        # Solve the duplicate names problem by first creating a default dict
-        # whose keys (primitive names) point to the number of indexes.
-        # By filtering ones with more than one index one can find out the
-        # duplicate names.
-        duplicate_names = collections.defaultdict(list)
-        for index, item in enumerate(new_names):
-            duplicate_names[item].append(index)
-        duplicate_names = {k:v for k, v in duplicate_names.items() if len(v)>1}
-        # List is modified inplace: add the trailing number.
-        for duplicate_indexes in duplicate_names.values():
-            add_trailing_number(new_names, duplicate_indexes)
+            # Solve the duplicate names problem by first creating a default dict
+            # whose keys (primitive names) point to the number of indexes.
+            # By filtering ones with more than one index one can find out the
+            # duplicate names.
+            duplicate_names = collections.defaultdict(list)
+            for index, item in enumerate(new_names):
+                duplicate_names[item].append(index)
+            duplicate_names = {k:v for k, v in duplicate_names.items() if len(v)>1}
+            # List is modified inplace: add the trailing number.
+            for duplicate_indexes in duplicate_names.values():
+                add_trailing_number(new_names, duplicate_indexes)
 
-        list_of_file_renamings = []
-        for src, dst in zip(files_to_rename, new_names):
-            try:
-                os.rename(src, dst)
-                list_of_file_renamings.append('mv \'{0}\' \'{1}\''.format(dst, src))
-                logging.info('mv \'{1}\' \'{0}\''.format(dst, src))
-            except PermissionError:
-                pass
+            list_of_file_renamings = []
+            for src, dst in zip(paths_to_rename, new_names):
+                try:
+                    shutil.move(src, dst)
+                    list_of_file_renamings.append('mv \'{0}\' \'{1}\''.format(dst, src))
+                    logging.info('mv \'{1}\' \'{0}\''.format(dst, src))
+                except PermissionError:
+                    pass
 
         # Then we can do the actual renaming of files.
 

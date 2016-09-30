@@ -132,6 +132,7 @@ def filter_out_paths_to_be_renamed(
                            exclude_pattern.search(x) is None]
     return paths_to_rename
 
+
 def do_the_renaming(old_names, new_names, history_file):
     u"""Remove paths that need not to be renamed from a list.
 
@@ -148,3 +149,15 @@ def do_the_renaming(old_names, new_names, history_file):
 
     """
     pass
+
+
+def directory_generation_starting_from_files(
+        list_of_files,
+        list_of_directories_to_recurse):
+    u"""Return a single generator starting from files then folders."""
+    for one_file in list_of_files:
+        yield one_file
+    for one_dir in list_of_directories_to_recurse:
+        for dirpath, _, filenames in os.walk(
+                one_dir, topdown=False):
+            yield [os.path.join(dirpath, fn) for fn in filenames] + [dirpath]
