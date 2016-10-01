@@ -63,7 +63,7 @@ def primitive_name(x, add_trailing_numbers=False):
     basename = re.search('^_*', basename).group()                             \
         + re.sub('_+', '_', re.sub('(_*)([^_].+)', '\\2', basename))
     if basename == '':
-        basename = 'empty_name_after_e'
+        basename = '_'
     return os.path.join(os.path.dirname(x), basename)
 
 

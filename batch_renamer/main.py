@@ -215,10 +215,23 @@ def main():
             for src, dst in zip(paths_to_rename, new_names):
                 try:
                     shutil.move(src, dst)
-                    list_of_file_renamings.append('mv \'{0}\' \'{1}\''.format(dst, src))
-                    logging.info('mv \'{1}\' \'{0}\''.format(dst, src))
                 except PermissionError:
                     pass
+                # Store the file names with quotes escaped.
+                list_of_file_renamings.append((
+                    dst.replace("\"", "\\\""),
+                    src.replace("\"", "\\\"")))
+                logging.info("mv \"{1}\" \"{0}\"".format(dst, src))
+            # Revert tuple to preserve renaming order (start with
+            # subfolder).
+            list_of_file_renamings = reversed(list_of_file_renamings)
+            list_of_file_renamings = (
+                'mv "{0}" "{1}"'.format(
+                    x[0],
+                    x[1]) for x in list_of_file_renamings)
+
+            history_file.write('\n'.join(list_of_file_renamings))
+        history_file.write('\n')
 
         # Then we can do the actual renaming of files.
 
