@@ -197,7 +197,8 @@ def main():
             paths_to_rename = filter_out_paths_to_be_renamed(
                 recurse,
                 RE_COMPILED_NOT_ALLOWED_EXPR,
-                list_of_excl_regex_patterns)
+                list_of_excl_regex_patterns,
+                args.prefixisomoddate)
             new_names = list(map(primitive_name, paths_to_rename))
 
             # Solve the duplicate names problem by first creating a default dict

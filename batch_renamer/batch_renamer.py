@@ -24,13 +24,12 @@ except ImportError:
         return x
 
 
-def primitive_name(x, add_trailing_numbers=False):
+def primitive_name(x):
     """
     Create a primitive name from string x.
 
     Arguments:
         x (str): string to be converted to primitive name.
-        add_trailing_numbers (bool): whether or not to add a '_dd' suffix.
 
     Returns:
         str: string converted to primitive name.
@@ -105,7 +104,8 @@ def add_trailing_number(list_of_paths, list_of_indexes_with_dupes):
 def filter_out_paths_to_be_renamed(
         list_of_paths,
         compiled_regex_to_trigger_renaming,
-        list_of_excluding_regex_patterns):
+        list_of_excluding_regex_patterns,
+        prefixisomoddate):
     u"""Remove paths that need not to be renamed from a list.
 
     Arguments:
@@ -123,9 +123,29 @@ def filter_out_paths_to_be_renamed(
     # If the compiled regex to trigger renaming returns something keep this
     # entry.
     # Only considers basename in order to do the renaming.
-    paths_to_rename = [x for x in list_of_paths if
-                       compiled_regex_to_trigger_renaming.search(
-                           os.path.basename(x)) is not None]
+    def has_to_be_renamed_if_match(regex, filepath):
+        u"""Determine wheter string has to be renamed if has a match."""
+        if regex.search(os.path.basename(filepath)) is None:
+            return False
+        else:
+            return True
+
+    def has_prefixisomoddate(filepath):
+        u"""Determine wheter string has a prefixisomoddate already."""
+        prefixisomoddate_regex = re.compile(
+            '^[0-9]{8}_')
+        if prefixisomoddate_regex.search(os.path.basename(filepath)) is None:
+            return False
+        else:
+            return True
+
+    if not prefixisomoddate:
+        paths_to_rename = filter(has_to_be_renamed_if_match, list_of_paths)
+        paths_to_rename = filter(has_to_be_renamed_if_match, paths_to_rename)
+    else:
+
+        # paths_to
+        pass
     # Keep the entry if the exclude pattern search finds nothing.
     for exclude_pattern in list_of_excluding_regex_patterns:
         paths_to_rename = [x for x in paths_to_rename if
