@@ -13,6 +13,7 @@ Operation mode:
 """
 
 # pylama:skip=1
+# TODO: add prefix iso mod date again
 
 import logging
 import argparse
@@ -215,13 +216,18 @@ def main():
             for src, dst in zip(paths_to_rename, new_names):
                 try:
                     shutil.move(src, dst)
+                    # Store the file names with quotes escaped.
+                    list_of_file_renamings.append((
+                        dst.replace("\"", "\\\""),
+                        src.replace("\"", "\\\"")))
+                    logging.info("mv \"{1}\" \"{0}\"".format(dst, src))
                 except PermissionError:
-                    pass
-                # Store the file names with quotes escaped.
-                list_of_file_renamings.append((
-                    dst.replace("\"", "\\\""),
-                    src.replace("\"", "\\\"")))
-                logging.info("mv \"{1}\" \"{0}\"".format(dst, src))
+                    logging.warning(
+                        'PermissionError exception: \'{}\''.format(src))
+                # TODO: fix root causes instead of just skipping
+                except FileNotFoundError:
+                    logging.warning(
+                        'FileNotFound exception: \'{}\''.format(src))
             # Revert tuple to preserve renaming order (start with
             # subfolder).
             list_of_file_renamings = reversed(list_of_file_renamings)
@@ -238,85 +244,6 @@ def main():
         # Second we repeat the same procedure for the subdirectories.
 
 
-# Old code
-#    with args.historyfile.open('at') as history_file:
-#            history_file.write('NEW ENTRY: ' + time.ctime() + '\n')
-#            for (root_dir, subdirs, file_names) in                                \
-#                    os.walk(os.path.join(*args.input.parts), topdown=False):
-#                for file_n in file_names:
-#                    # Ignore patterns in 'exclude_re_patterns'
-#                    for exclude_pattern in excluded_patterns:
-#                        if re.search(exclude_pattern,
-#                                    os.path.join(root_dir, file_n)):
-#                            break
-#                    else:
-#                        primitive_n = primitive_name(os.path.join(root_dir,
-#                                                                file_n))
-#                        # If the new name is different than the actual name
-#                        # or the prefixisomoddate flag is True
-#                        if args.prefixisomoddate is True:
-#                            if re.search('\/[0-9]{8}_[^\/].*',
-#                                        primitive_n) is None:
-#                                time = datetime.datetime.fromtimestamp(
-#                                    os.path.getmtime(os.path.join(
-#                                        root_dir, file_n)))
-#                                primitive_n = os.path.join(
-#                                    os.path.dirname(primitive_n),
-#                                    time.strftime('%Y%m%d_')
-#                                    + os.path.basename(primitive_n))
-#                        if primitive_n != os.path.join(root_dir, file_n):
-#                            # If new name exists add a trailing number to new file
-#                            if os.path.exists(primitive_n):
-#                                dst = os.path.join(
-#                                    root_dir, add_trailing_number(primitive_n))
-#                            else:
-#                                dst = os.path.join(root_dir, primitive_n)
-#                            src = os.path.join(root_dir, file_n)
-#                            try:
-#                                os.rename(src, dst)
-#                                history_file.write('mv \'{0}\' \'{1}\'\n'.format(dst,
-#                                                                            src))
-#                            except PermissionError:
-#                                pass
-#                for dir_n in subdirs:
-#                    for exclude_pattern in excluded_patterns:
-#                        if re.search(exclude_pattern, os.path.join(root_dir,
-#                                                                file_n)):
-#                            break
-#                    else:
-#                        primitive_n = primitive_name(os.path.join(root_dir, dir_n))
-#                        # If the new name is different than the actual name
-#                        if primitive_n != os.path.join(root_dir, dir_n):
-#                            # If new name exists add a trailing number to new file
-#                            if os.path.isdir(primitive_n):
-#                                dst = os.path.join(
-#                                    root_dir, add_trailing_number(primitive_n))
-#                            else:
-#                                dst = os.path.join(root_dir, primitive_n)
-#                            src = os.path.join(root_dir, dir_n)
-#                            try:
-#                                os.rename(src, dst)
-#                                history_file.write('mv \'{0}\' \'{1}\'\n'.format(dst,
-#                                                                            src))
-#                            except PermissionError:
-#                                pass
-#
-#    # If it is a file and also the input itself
-#    with args.historyfile.open('at') as history_file:
-#        history_file.write('NEW ENTRY: ' + time.ctime() + '\n')
-#        file_n = os.path.join(*args.input.parts)
-#        for exclude_pattern in excluded_patterns:
-#            if re.search(exclude_pattern, file_n):
-#                raise SystemExit(0)
-#        else:
-#            file_n = primitive_name(file_n)
-#            if os.path.exists(file_n):
-#                dst = add_trailing_number(primitive_n)
-#            src = os.path.join(*args.input.parts)
-#            dst = file_n
-#            if src != dst:
-#                history_file.write('mv \'{0}\' \'{1}\'\n'.format(dst, src))
-#                os.rename(src, dst)
 
 
 if __name__ == '__main__':
