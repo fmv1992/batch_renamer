@@ -15,6 +15,7 @@ Functions:
 
 import re
 import os
+import datetime
 
 try:
     from unidecode import unidecode
@@ -24,7 +25,7 @@ except ImportError:
         return x
 
 
-def primitive_name(x):
+def primitive_name(x, prefixisomoddate=False):
     """
     Create a primitive name from string x.
 
@@ -36,6 +37,12 @@ def primitive_name(x):
     """
     # Transliterate Unicode text into plain 7-bit ASCII if 'unicode' module is
     # present
+    basename = unidecode(os.path.basename(x)).lower()
+    # Inserts prefix iso mod date if there is none:
+    if re.match('[-9]{6}_', x) is None:
+        time = datetime.datetime.fromtimestamp(os.path.getmtime(x))
+        basename += time.strftime('%Y%m%d_')
+        print(basename)
     basename = unidecode(os.path.basename(x)).lower()
     # Changes a sequence of symbols for a single underline if it is not
     # adjacent to an underline. In this case obliterates the symbol.
@@ -139,17 +146,16 @@ def filter_out_paths_to_be_renamed(
         else:
             return True
 
-    if not prefixisomoddate:
-        paths_to_rename = filter(has_to_be_renamed_if_match, list_of_paths)
-        paths_to_rename = filter(has_to_be_renamed_if_match, paths_to_rename)
-    else:
-
-        # paths_to
-        pass
+    paths_to_rename = filter(
+        lambda x: has_to_be_renamed_if_match(compiled_regex_to_trigger_renaming,
+                                             x), list_of_paths)
+    if prefixisomoddate:
+        paths_to_rename = filter(has_prefixisomoddate, paths_to_rename)
     # Keep the entry if the exclude pattern search finds nothing.
     for exclude_pattern in list_of_excluding_regex_patterns:
-        paths_to_rename = [x for x in paths_to_rename if
-                           exclude_pattern.search(x) is None]
+        paths_to_rename = [
+            x for x in paths_to_rename if exclude_pattern.search(x) is None
+        ]
     return paths_to_rename
 
 
