@@ -12,8 +12,8 @@ Operation mode:
 
 """
 
-# pylama:skip=1
-# TODO: add prefix iso mod date again
+## pylama:skip=1
+# pylama:ignore=W1202
 
 import logging
 import argparse
@@ -28,7 +28,7 @@ from batch_renamer import primitive_name, add_trailing_number, \
 
 
 def main():
-
+    u"""Execute the actual renaming of files."""
     # Allowed regex to filter files that need to be renamed.
     # That is characters that are NOT:
     #   1) Lowercase letters
@@ -71,7 +71,6 @@ def main():
         action='store_true',
         default=False)
 
-
     parser.add_argument(
         '--dryrun',
         help='Print dummy commands to stdout without actually renaming '
@@ -98,7 +97,7 @@ def main():
             setattr(args,
                     atr,
                     os.path.abspath(
-                    getattr(args, atr)))
+                        getattr(args, atr)))
         elif isinstance(getattr(args, atr), list):
             setattr(args,
                     atr,
@@ -111,9 +110,9 @@ def main():
     if not all(test_input_paths):
         raise FileNotFoundError(
             'Some of the input paths do not exist:\n\t{0}'.format(
-            '\n\t'.join(
-                list(filter(lambda x: not os.path.exists(x),
-                            args.input)))))
+                '\n\t'.join(
+                    list(filter(lambda x: not os.path.exists(x),
+                                args.input)))))
     else:
         # It is better to create a dictionary of 'files' and 'folders' in order
         # to process all the files first. Otherwise some file names would be
@@ -146,10 +145,8 @@ def main():
         logging.info('Excluding the following patterns:\n\t{0}'.format(
             '\n\t'.join(excluded_patterns)))
 
-
     # Parsing the prefix iso mod date mode.
     if args.prefixisomoddate:
-        import datetime
         logging.info('Prefixing files according to \'yyymmdd_\'.')
     # Logging messages for the remaining arguments: prefix iso mod date and
     # dry run
@@ -199,7 +196,9 @@ def main():
                 RE_COMPILED_NOT_ALLOWED_EXPR,
                 list_of_excl_regex_patterns,
                 args.prefixisomoddate)
-            new_names = list(map(primitive_name, paths_to_rename))
+            new_names = list(
+                map(lambda x: primitive_name(x, args.prefixisomoddate),
+                    paths_to_rename))
 
             # Solve the duplicate names problem by first creating a default dict
             # whose keys (primitive names) point to the number of indexes.
@@ -208,7 +207,8 @@ def main():
             duplicate_names = collections.defaultdict(list)
             for index, item in enumerate(new_names):
                 duplicate_names[item].append(index)
-            duplicate_names = {k:v for k, v in duplicate_names.items() if len(v)>1}
+            duplicate_names = {
+                k: v for k, v in duplicate_names.items() if len(v) > 1}
             # List is modified inplace: add the trailing number.
             for duplicate_indexes in duplicate_names.values():
                 add_trailing_number(new_names, duplicate_indexes)
@@ -243,8 +243,6 @@ def main():
         # Then we can do the actual renaming of files.
 
         # Second we repeat the same procedure for the subdirectories.
-
-
 
 
 if __name__ == '__main__':

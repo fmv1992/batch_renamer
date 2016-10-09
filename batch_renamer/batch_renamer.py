@@ -39,11 +39,14 @@ def primitive_name(x, prefixisomoddate=False):
     # present
     basename = unidecode(os.path.basename(x)).lower()
     # Inserts prefix iso mod date if there is none:
-    if re.match('[-9]{6}_', x) is None:
+    if prefixisomoddate:
         time = datetime.datetime.fromtimestamp(os.path.getmtime(x))
-        basename += time.strftime('%Y%m%d_')
-        print(basename)
-    basename = unidecode(os.path.basename(x)).lower()
+        iso_prefix = re.search('^[0-9]{8}_', basename)
+        if iso_prefix:
+            if iso_prefix.groups(0) != time.strftime('%Y%m%d_'):
+                basename = time.strftime('%Y%m%d_') + basename[9:]
+        else:
+            basename = time.strftime('%Y%m%d_') + basename
     # Changes a sequence of symbols for a single underline if it is not
     # adjacent to an underline. In this case obliterates the symbol.
     # Symbols are any character which is not a letter, nor a number nor '.' and
@@ -132,25 +135,27 @@ def filter_out_paths_to_be_renamed(
     # Only considers basename in order to do the renaming.
     def has_to_be_renamed_if_match(regex, filepath):
         u"""Determine wheter string has to be renamed if has a match."""
-        if regex.search(os.path.basename(filepath)) is None:
-            return False
-        else:
+        if regex.search(os.path.basename(filepath)):
             return True
-
-    def has_prefixisomoddate(filepath):
-        u"""Determine wheter string has a prefixisomoddate already."""
-        prefixisomoddate_regex = re.compile(
-            '^[0-9]{8}_')
-        if prefixisomoddate_regex.search(os.path.basename(filepath)) is None:
-            return False
         else:
-            return True
+            return False
 
     paths_to_rename = filter(
         lambda x: has_to_be_renamed_if_match(compiled_regex_to_trigger_renaming,
                                              x), list_of_paths)
     if prefixisomoddate:
-        paths_to_rename = filter(has_prefixisomoddate, paths_to_rename)
+        has_not_prefixisomoddate_regex = re.compile(
+            '^(?![0-9]{8}_)')
+        paths_to_rename_prefixidomoddate = filter(
+            lambda x: has_to_be_renamed_if_match(has_not_prefixisomoddate_regex,
+                                                 x), list_of_paths)
+        # This allows directories to come before files.
+        paths_to_rename = set(paths_to_rename) \
+                          | set(paths_to_rename_prefixidomoddate)
+        # This sorting makes sure files are processed first. Apply set to
+        # variables disarranges the order.
+        paths_to_rename = sorted(paths_to_rename, key=os.path.isfile,
+                                 reverse=True)
     # Keep the entry if the exclude pattern search finds nothing.
     for exclude_pattern in list_of_excluding_regex_patterns:
         paths_to_rename = [
