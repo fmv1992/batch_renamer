@@ -12,7 +12,9 @@ Operation mode:
 
 """
 
-## pylama:skip=1
+# # pylama:skip=1
+# Ignore the % in formatting in logging (w1202)
+# The '# noqa' ignores one line from pylama
 # pylama:ignore=W1202
 
 import logging
@@ -21,7 +23,7 @@ import os
 import shutil
 import time
 import collections  # Used to find duplicate values and thus add
-                    # a suffix accordingly.
+                    # a suffix accordingly. #noqa
 import re
 from batch_renamer import primitive_name, add_trailing_number, \
     filter_out_paths_to_be_renamed, directory_generation_starting_from_files
@@ -120,7 +122,7 @@ def main():
         input_args = dict()
         input_args['files'] = list(filter(os.path.isfile, args.input))
         input_args['folders'] = list(filter(os.path.isdir, args.input))
-        logging.info('Processing paths:\n\t{0}'.format(
+        logging.info('Processing paths: {0}'.format(
             '\n\t'.join(args.input)))
 
     if not os.path.isfile(args.historyfile):
@@ -215,6 +217,12 @@ def main():
 
             list_of_file_renamings = []
             for src, dst in zip(paths_to_rename, new_names):
+                if os.path.isfile(dst) or os.path.isdir(dst):
+                    continue
+                # TODO: move exception to warning.
+                    raise FileExistsError(
+                        'WARNING: WILL NOT OVERWRITE FILE {0} -> {1}'.format(
+                            src, dst))
                 try:
                     shutil.move(src, dst)
                     # Store the file names with quotes escaped.

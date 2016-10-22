@@ -187,7 +187,10 @@ def directory_generation_starting_from_files(
         list_of_directories_to_recurse):
     u"""Return a single generator starting from files then folders."""
     for one_file in list_of_files:
-        yield one_file
+        # In order to achieve consistency return a list of a single item.
+        # Otherwise returning a string could mess with the functions that
+        # iterate over an entry.
+        yield [one_file]
     for one_dir in list_of_directories_to_recurse:
         for dirpath, _, filenames in os.walk(
                 one_dir, topdown=False):
