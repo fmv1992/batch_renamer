@@ -1,8 +1,8 @@
 u"""
 This module does a batch rename of your files according to specific rules.
 
-Mainly it takes off special characters and dashes leaving only letters, numbers,
-underscores and periods.
+Mainly it takes off special characters and dashes leaving only letters,
+numbers, underscores and periods.
 
 Operation mode:
     1) Iterates over folders, starting at the deepest depths and moving
@@ -169,10 +169,10 @@ def main():
     #   3) Resolve all conflicts.
     #   4) Do the renaming.
     #   5) (Take all the logging into account.)
-    # The problem with this approach is that a very long list could be generated
-    # in a folder with a lot of subfolders and files. Maybe a list with some
-    # thousand entries is not a very elegant solution. A regular root folder has
-    # circa 1e6 inodes for example.
+    # The problem with this approach is that a very long list could be
+    # generated in a folder with a lot of subfolders and files. Maybe a list
+    # with some thousand entries is not a very elegant solution. A regular root
+    # folder has circa 1e6 inodes for example.
     #
     # A different approach is to do this in mini batches, executing the job on
     # per folder batches.
@@ -202,8 +202,8 @@ def main():
                 map(lambda x: primitive_name(x, args.prefixisomoddate),
                     paths_to_rename))
 
-            # Solve the duplicate names problem by first creating a default dict
-            # whose keys (primitive names) point to the number of indexes.
+            # Solve the duplicate names problem by first creating a default
+            # dict whose keys (primitive names) point to the number of indexes.
             # By filtering ones with more than one index one can find out the
             # duplicate names.
             duplicate_names = collections.defaultdict(list)

@@ -121,8 +121,8 @@ def filter_out_paths_to_be_renamed(
     Arguments:
         list_of_paths (list): list of valid paths to be filtered.
         compiled_regex_to_trigger_renaming (compiled re object):
-            compiled object whose search method should yield True for objects to
-            be renamed.
+            compiled object whose search method should yield True for objects
+            to be renamed.
         list_of_excluding_regex_patterns (list): list of patterns to remove a
             given path from the renaming process.
 
@@ -141,17 +141,21 @@ def filter_out_paths_to_be_renamed(
             return False
 
     paths_to_rename = filter(
-        lambda x: has_to_be_renamed_if_match(compiled_regex_to_trigger_renaming,
-                                             x), list_of_paths)
+        lambda x: has_to_be_renamed_if_match(
+            compiled_regex_to_trigger_renaming,
+            x),
+        list_of_paths)
     if prefixisomoddate:
         has_not_prefixisomoddate_regex = re.compile(
             '^(?![0-9]{8}_)')
         paths_to_rename_prefixidomoddate = filter(
-            lambda x: has_to_be_renamed_if_match(has_not_prefixisomoddate_regex,
-                                                 x), list_of_paths)
+            lambda x: has_to_be_renamed_if_match(
+                has_not_prefixisomoddate_regex,
+                x),
+            list_of_paths)
         # This allows directories to come before files.
         paths_to_rename = set(paths_to_rename) \
-                          | set(paths_to_rename_prefixidomoddate)
+                          | set(paths_to_rename_prefixidomoddate)  # noqa
         # This sorting makes sure files are processed first. Apply set to
         # variables disarranges the order.
         paths_to_rename = sorted(paths_to_rename, key=os.path.isfile,
@@ -170,8 +174,8 @@ def do_the_renaming(old_names, new_names, history_file):
     Arguments:
         list_of_paths (list): list of valid paths to be filtered.
         compiled_regex_to_trigger_renaming (compiled re object):
-            compiled object whose search method should yield True for objects to
-            be renamed.
+            compiled object whose search method should yield True for objects a
+            to be renamed.
         list_of_excluding_regex_patterns (list): list of patterns to remove a
             given path from the renaming process.
 
