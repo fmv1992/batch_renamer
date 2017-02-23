@@ -89,7 +89,7 @@ def add_trailing_number(list_of_paths, list_of_indexes_with_dupes):
             list_of_paths with dupes.
 
     Returns:
-        True: The input list is modified in place.
+        None: The input list is modified in place.
 
     """
     base_string = list_of_paths[list_of_indexes_with_dupes[0]]
@@ -108,7 +108,7 @@ def add_trailing_number(list_of_paths, list_of_indexes_with_dupes):
         list_of_paths[index] = file_name \
             + '_{1:{0}d}'.format(decimal_places, i) \
             + extension
-    return True
+    return None
 
 
 def filter_out_paths_to_be_renamed(
@@ -199,3 +199,37 @@ def directory_generation_starting_from_files(
         for dirpath, _, filenames in os.walk(
                 one_dir, topdown=False):
             yield [os.path.join(dirpath, fn) for fn in filenames] + [dirpath]
+
+
+def generate_folder_structure(top):
+    """Return a generator of all subfolders and files found in top directory.
+
+    The order of returning the subfolders first or the files first does not
+    matter as long as when the reverse operation is done if ones wants to
+    restore the files.
+
+    Arguments:
+        top (str): the path of the directory to scan for all files.
+
+    Returns:
+        generator: a generator containing all files found recursively on top.
+
+    """
+    walk_w_folders = filter(
+        lambda x: x[1],
+        os.walk(top))
+    for has_directory in walk_w_folders:
+        for one_directory in has_directory[1]:
+            yield os.path.join(has_directory[0], one_directory)
+
+    walk_w_files = filter(
+        lambda x: x[2],
+        os.walk(top))
+    for has_file in walk_w_files:
+        for one_file in has_file[2]:
+            yield os.path.join(has_file[0], one_file)
+    return None
+
+
+if __name__ == '__main__':
+    pass
