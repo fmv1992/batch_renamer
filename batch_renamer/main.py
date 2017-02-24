@@ -1,5 +1,4 @@
 # vim: set fileformat=unix foldtext=foldtext() foldmethod=marker nowrap :
-
 """
 This module does a batch renaming of your files according to specific rules.
 
@@ -41,21 +40,6 @@ def parse_arguments():
         argparse.ArgumentParser: the parsed arguments.
 
     """
-    pass
-
-
-def main():
-    """Execute the actual renaming of files."""
-    # Constants declaration {{{
-    # Allowed regex to filter files that need to be renamed.
-    # That is characters that are NOT:
-    #   1) Lowercase letters
-    #   2) Numbers
-    #   3) Underscores
-    #   4) Dots
-    RE_COMPILED_NOT_ALLOWED_EXPR = re.compile('[^a-z0-9\_\.]', flags=0)
-    # }}}
-
     # Arguments parsing block. {{{
     parser = argparse.ArgumentParser()
 
@@ -114,19 +98,26 @@ def main():
                         os.path.abspath,
                         getattr(args, atr))))
     # }}}
+    return args
 
+def logging_setup(verbose):
+    """Set up logging."""
     # Activates logging. {{{
-    if args.verbose is None:
+    if verbose is None:
         pass
-    if args.verbose == 1:
+    if verbose == 1:
         logging.basicConfig(format='%(levelname)s: %(asctime)s: %(message)s',
                             level=logging.INFO, datefmt='%Y/%m/%d %H:%M:%S')
         logging.info('Verbose mode.')
-    if args.verbose == 2:
+    if verbose == 2:
         # TODO: create a debug utility.
         pass
     # }}}
+    return None
 
+
+def check_arguments(args):
+    """Check if arguments are valid."""
     # Arguments checking {{{
     # Check if input, historyfile and excludepatternfile exist.
     test_input_paths = list(map(os.path.exists, args.input))
@@ -176,6 +167,29 @@ def main():
     if args.dryrun:
         logging.info('Dry run mode: no actual changes will be made')
     # }}}
+    return None
+
+
+def execute_renamint():
+    """Execute the renaming of the files."""
+    pass
+
+
+def main():
+    """Execute the actual renaming of files."""
+    # Constants declaration {{{
+    # Allowed regex to filter files that need to be renamed.
+    # That is characters that are NOT:
+    #   1) Lowercase letters
+    #   2) Numbers
+    #   3) Underscores
+    #   4) Dots
+    RE_COMPILED_NOT_ALLOWED_EXPR = re.compile('[^a-z0-9\_\.]', flags=0)
+    # }}}
+
+    args = parse_arguments()
+
+    logging_setup(args.verbose)
 
     # Do the actual renaming {{{
     # Write to history file.

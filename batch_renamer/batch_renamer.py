@@ -16,6 +16,9 @@ Functions:
 import re
 import os
 import datetime
+import math
+
+# pylama: ignore=E127
 
 try:
     from unidecode import unidecode
@@ -25,7 +28,8 @@ except ImportError:
         return x
 
 
-def primitive_name(x, prefixisomoddate=False):
+# TODO: prefix iso mod date is a different function. Move it to another one.
+def primitive_name(x):
     """
     Create a primitive name from string x.
 
@@ -34,20 +38,27 @@ def primitive_name(x, prefixisomoddate=False):
 
     Returns:
         str: string converted to primitive name.
+
+    Examples:
+        >>> primitive_name('__pyname__')
+        __pyname__
+        >>> primitive_name('i_dont_like_trailing_underscores__.tar')
+        i_dont_like_trailing_underscores.tar
+
     """
     # Transliterate Unicode text into plain 7-bit ASCII if 'unicode' module is
-    # present
+    # present.
     basename = unidecode(os.path.basename(x)).lower()
     # Inserts prefix iso mod date if there is none:
-    if prefixisomoddate:
-        time = datetime.datetime.fromtimestamp(os.path.getmtime(x))
-        iso_prefix = re.search('^[0-9]{8}_', basename)
-        if iso_prefix:
-            if iso_prefix.groups(0) != time.strftime('%Y%m%d_'):
-                basename = time.strftime('%Y%m%d_') + basename[9:]
-        else:
-            basename = time.strftime('%Y%m%d_') + basename
-    # Changes a sequence of symbols for a single underline if it is not
+    # if prefixisomoddate:
+    #     iso_prefix = re.search('^[0-9]{8}_', basename)
+    #     if iso_prefix:
+    #         time = datetime.datetime.fromtimestamp(os.path.getmtime(x))
+    #         if iso_prefix.groups(0) != time.strftime('%Y%m%d_'):
+    #             basename = time.strftime('%Y%m%d_') + basename[9:]
+    #     else:
+    #         basename = time.strftime('%Y%m%d_') + basename
+    # # Changes a sequence of symbols for a single underline if it is not
     # adjacent to an underline. In this case obliterates the symbol.
     # Symbols are any character which is not a letter, nor a number nor '.' and
     # '_'
@@ -60,55 +71,55 @@ def primitive_name(x, prefixisomoddate=False):
         '',
         basename,
         flags=(re.VERBOSE))
-    # Removes the first char if it is a symbol
+    # Removes the leading chars if it is a symbol.
     basename = re.sub('^[^0-9a-zA-Z\_\.]+', '', basename)
-    # Removes any sequence of non underscore chars for an underscore
+    # Removes any sequence of non underscore chars for an underscore.
     basename = re.sub('[^0-9a-zA-Z\_\.]+', '_', basename)
-    # Removes any trailing '_' before extension
-    basename = re.sub('_(?=\.[^.]+$)', '', basename)
-    # Removes any trailing '_'
+    # Removes any trailings '_' before extension.
+    basename = re.sub('_+(?=\.[^.]+$)', '', basename)
+    # Removes any trailing '_'.
     basename = re.sub('_+$', '', basename)
-    # Removes any sequence of '_' except at the start of the string
+    # TODO: improve the following obscure regex substitution.
+    # Removes any sequence of '_' except at the start of the string.
     basename = re.search('^_*', basename).group()                             \
-        + re.sub('_+', '_', re.sub('(_*)([^_].+)', '\\2', basename))
+               + re.sub('_+', '_',
+                        re.sub('(_*)([^_].+)', '\\2', basename))
     if basename == '':
         basename = '_'
     return os.path.join(os.path.dirname(x), basename)
 
 
-def add_trailing_number(list_of_paths, list_of_indexes_with_dupes):
+def add_trailing_number(iterable, suffix='_', n=None):
     """
-    Substitute or add a trailing number to the string.
+    Add trailing number to strings in iterable.
 
     Add a trailing number to string over and over again until there is not a
     file with that name.
 
     Arguments:
-        list_of_paths (list): list of paths with duplicate_names.
-        list_of_indexes_with_dupes (list): list of integer indexes referring to
-            list_of_paths with dupes.
+        iterable (tuple): iterable with strings to have trailing numbers added
+        to it.
 
     Returns:
-        None: The input list is modified in place.
+        map: strings with added trailing numbers.
+
+    Example:
+        >>> add_trailing_number(['a', 'b', 'c'])
+        ('a_1', 'b_2', 'c_3')
 
     """
-    base_string = list_of_paths[list_of_indexes_with_dupes[0]]
-    if '.' in base_string:
-        file_name, extension = base_string.split('.', maxsplit=1)
-        extension = '.' + extension
+    if n is None:
+        try:
+            decimal_places = math.ceil(math.log(len(iterable), 10))
+        except TypeError:
+            decimal_places = 0
     else:
-        file_name = base_string
-        extension = ''
-    decimal_places = 1
-    number_of_elements = len(list_of_indexes_with_dupes)
-    while number_of_elements/10 > 1:
-        number_of_elements /= 10
-        decimal_places += 1
-    for i, index in enumerate(list_of_indexes_with_dupes):
-        list_of_paths[index] = file_name \
-            + '_{1:{0}d}'.format(decimal_places, i) \
-            + extension
-    return None
+        decimal_places = math.ceil(math.log(n, 10))
+    return map(lambda i: i[1] + suffix + '{0:0{1}d}'.format(i[0],
+                                                            decimal_places),
+        enumerate(iterable))
+
+
 
 
 def filter_out_paths_to_be_renamed(
