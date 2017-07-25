@@ -90,15 +90,19 @@ Using the follwing exclude_re_patterns.txt file:
 
 ## TODO
 
-- Fix error when there is only directories to be renamed.
+- Add test suite
+
+- Fix order of the renaming to be able to reverse directory and file renames
+
+- Fix error when there is only directories to be renamed
 
 - Raise Exceptions for history file and pattern file if not found
 
 - Fix prefixisomoddate on files
 
-- Allow for multiple inputs if input is the last argument.
+- Allow for multiple inputs if input is the last argument
 
-- Add a dry run option.
+- Add a dry run option
 
 - Handle permission error either silently ou just log it somehow
 
@@ -106,3 +110,7 @@ Using the follwing exclude_re_patterns.txt file:
 
 - Fix changing uppercase to lowercase on windows not being detected as change
   such as 'Capulet' being renamed to 'capulet_00' instead of 'capulet'
+
+## Changelog
+
+- v0.1: First version to be tracked for changelogs.

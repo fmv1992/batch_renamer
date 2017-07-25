@@ -40,28 +40,15 @@ def primitive_name(x):
         str: string converted to primitive name.
 
     Examples:
-        >>> primitive_name('__pyname__')
-        __pyname__
         >>> primitive_name('i_dont_like_trailing_underscores__.tar')
         i_dont_like_trailing_underscores.tar
+        >>> primitive_name('__pyname__')
+        __pyname__
 
     """
     # Transliterate Unicode text into plain 7-bit ASCII if 'unicode' module is
     # present.
     basename = unidecode(os.path.basename(x)).lower()
-    # Inserts prefix iso mod date if there is none:
-    # if prefixisomoddate:
-    #     iso_prefix = re.search('^[0-9]{8}_', basename)
-    #     if iso_prefix:
-    #         time = datetime.datetime.fromtimestamp(os.path.getmtime(x))
-    #         if iso_prefix.groups(0) != time.strftime('%Y%m%d_'):
-    #             basename = time.strftime('%Y%m%d_') + basename[9:]
-    #     else:
-    #         basename = time.strftime('%Y%m%d_') + basename
-    # # Changes a sequence of symbols for a single underline if it is not
-    # adjacent to an underline. In this case obliterates the symbol.
-    # Symbols are any character which is not a letter, nor a number nor '.' and
-    # '_'
     basename = re.sub(
         '''(?<=_)[^0-9a-zA-Z\_\.]+      # Match all non allowed chars
                                         # preceded by underline...
@@ -117,9 +104,35 @@ def add_trailing_number(iterable, suffix='_', n=None):
         decimal_places = math.ceil(math.log(n, 10))
     return map(lambda i: i[1] + suffix + '{0:0{1}d}'.format(i[0],
                                                             decimal_places),
-        enumerate(iterable))
+               enumerate(iterable))
 
 
+def prefix_iso_mod_date(file_path):
+    """
+    Prefix a filepath with a 'YYYY_MM_DD_' prefix according to mod date.
+
+    Arguments:
+        file_path (str): string to have a prefix added to.
+
+    Returns:
+        str: string with prepended prefix.
+
+    Examples:
+        >>> prefix_iso_mod_date('/tmp/dummy.txt')
+        '/tmp/2017_01_01_dummy.txt'
+    """
+    basename = os.path.basename(file_path)
+    iso_prefix = re.search('^[0-9]{8}_', basename)
+    time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
+    if iso_prefix is None:
+        basename = time.strftime('%Y%m%d_') + basename
+    else:
+        if iso_prefix.groups(0) != time.strftime('%Y%m%d_'):
+            basename = time.strftime('%Y%m%d_') + basename[9:]
+        else:
+            basename = time.strftime('%Y%m%d_') + basename
+
+    return os.path.join(os.path.dirname(file_path), basename)
 
 
 def filter_out_paths_to_be_renamed(
