@@ -1,10 +1,5 @@
-__pycache__/
-__not_for_packaging/
-*~
-__not_for_packaging.tar
-personal_excludepatternfile.txt
-personal_historyfile.txt
+__*/
+_*/
+__*
+_*
 *personal*
-# This test should not be shipped with the program
-test.bash
-todo.txt
