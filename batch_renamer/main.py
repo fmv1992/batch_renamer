@@ -1,8 +1,12 @@
-u"""
-This module does a batch rename of your files according to specific rules.
+# vim: set fileformat=unix foldtext=foldtext() foldmethod=marker nowrap :
+"""
+This module does a batch renaming of your files according to specific rules.
 
 Mainly it takes off special characters and dashes leaving only letters,
 numbers, underscores and periods.
+
+The user can specify patterns (python regexes) to be ignored during the
+renaming process.
 
 Operation mode:
     1) Iterates over folders, starting at the deepest depths and moving
@@ -29,17 +33,14 @@ from batch_renamer import primitive_name, add_trailing_number, \
     filter_out_paths_to_be_renamed, directory_generation_starting_from_files
 
 
-def main():
-    u"""Execute the actual renaming of files."""
-    # Allowed regex to filter files that need to be renamed.
-    # That is characters that are NOT:
-    #   1) Lowercase letters
-    #   2) Numbers
-    #   3) Underscores
-    #   4) Dots
-    RE_COMPILED_NOT_ALLOWED_EXPR = re.compile('[^a-z0-9\_\.]', flags=0)
+def parse_arguments():
+    """Parse arguments provided in the command line.
 
-    # Variables parsing block.
+    Returns:
+        argparse.ArgumentParser: the parsed arguments.
+
+    """
+    # Arguments parsing block. {{{
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -82,16 +83,6 @@ def main():
 
     # Checking parsed args and correcting.
     args = parser.parse_args()
-    # Activates logging.
-    if args.verbose is None:
-        pass
-    if args.verbose == 1:
-        logging.basicConfig(format='%(levelname)s: %(asctime)s: %(message)s',
-                            level=logging.INFO, datefmt='%Y/%m/%d %H:%M:%S')
-        logging.info('Verbose mode.')
-    if args.verbose == 2:
-        # TODO: create a debug utility.
-        pass
 
     # Expanding args attributes to full path.
     for atr in ['input', 'historyfile', 'excludepatternfile']:
@@ -106,7 +97,28 @@ def main():
                     list(map(
                         os.path.abspath,
                         getattr(args, atr))))
+    # }}}
+    return args
 
+def logging_setup(verbose):
+    """Set up logging."""
+    # Activates logging. {{{
+    if verbose is None:
+        pass
+    if verbose == 1:
+        logging.basicConfig(format='%(levelname)s: %(asctime)s: %(message)s',
+                            level=logging.INFO, datefmt='%Y/%m/%d %H:%M:%S')
+        logging.info('Verbose mode.')
+    if verbose == 2:
+        # TODO: create a debug utility.
+        pass
+    # }}}
+    return None
+
+
+def check_arguments(args):
+    """Check if arguments are valid."""
+    # Arguments checking {{{
     # Check if input, historyfile and excludepatternfile exist.
     test_input_paths = list(map(os.path.exists, args.input))
     if not all(test_input_paths):
@@ -154,7 +166,32 @@ def main():
     # dry run
     if args.dryrun:
         logging.info('Dry run mode: no actual changes will be made')
+    # }}}
+    return None
 
+
+def execute_renamint():
+    """Execute the renaming of the files."""
+    pass
+
+
+def main():
+    """Execute the actual renaming of files."""
+    # Constants declaration {{{
+    # Allowed regex to filter files that need to be renamed.
+    # That is characters that are NOT:
+    #   1) Lowercase letters
+    #   2) Numbers
+    #   3) Underscores
+    #   4) Dots
+    RE_COMPILED_NOT_ALLOWED_EXPR = re.compile('[^a-z0-9\_\.]', flags=0)
+    # }}}
+
+    args = parse_arguments()
+
+    logging_setup(args.verbose)
+
+    # Do the actual renaming {{{
     # Write to history file.
     # Ignore patterns.
     # Take prefix iso mod date into account.
@@ -251,7 +288,7 @@ def main():
         # Then we can do the actual renaming of files.
 
         # Second we repeat the same procedure for the subdirectories.
-
+        # }}}
 
 if __name__ == '__main__':
     main()
