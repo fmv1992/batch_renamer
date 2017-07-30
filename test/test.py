@@ -59,7 +59,7 @@ def populate_directory_with_files(
         kwargs_create_file_extension=dict(),
         kwargs_create_random_string=dict()):
 
-    call_f = lambda: create_filename(
+    def call_f(): return create_filename(
         root_dir,
         include_extension=include_extension,
         kwargs_create_file_extension=kwargs_create_file_extension,
@@ -77,10 +77,11 @@ def populate_directory_with_dirs(
         root_dir,
         n_min_dirs=5,
         n_max_dirs=10,
-        kwargs_create_file_extension=dict(),
         kwargs_create_random_string=dict()):
 
-    call_f = lambda: create_dirname(root_dir, **kwargs_create_random_string)
+    def call_f(): return create_dirname(
+        root_dir,
+        kwargs_create_random_string=kwargs_create_random_string)
 
     for dirname in (call_f() for x in range(
             random.randint(n_min_dirs, n_max_dirs))):
@@ -90,8 +91,29 @@ def populate_directory_with_dirs(
     return None
 
 
-def recursive_populate_directory_with_dirs():
-    pass
+def recursive_populate_directory_with_dirs(
+        root_dir,
+        max_depth=5,
+        n_min_dirs=0,
+        n_max_dirs=3,
+        kwargs_create_random_string=dict()):
+    # import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+    populate_dirs = [root_dir, ]
+    for i in range(max_depth):
+        new_dirs = list()
+        for d in populate_dirs:
+            branching = random.randint(n_min_dirs, n_max_dirs)
+            populate_directory_with_dirs(
+                d,
+                branching,
+                branching,
+                kwargs_create_random_string=kwargs_create_random_string)
+            new_dirs += list(map(
+                lambda x: os.path.join(d, x),
+                filter(os.path.isdir,
+                       map(lambda x: os.path.join(d, x),
+                           os.listdir(d)))))
+            populate_dirs = new_dirs.copy()
 
 
 def recursive_populate_directory_with_files():
@@ -116,6 +138,11 @@ class TestBatchRenamer(unittest.TestCase):
             self.program_folder,
             'non_compliant_folder'))
         os.mkdir(self.non_compliant_folder)
+        self.recursively_pop_dir = os.path.abspath(os.path.join(
+            self.program_folder,
+            'recursively_pop_dir'))
+        os.mkdir(self.recursively_pop_dir)
+        # import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
         # TODO: why now?
         self.now = datetime.datetime.now()
         # Initialize excl_symbols_folder.
@@ -127,8 +154,16 @@ class TestBatchRenamer(unittest.TestCase):
             self.compliant_folder,
             kwargs_create_random_string={
                 'allowed_chars': string.ascii_lowercase})
+        # Initialize recursively populated directory.
+        recursive_populate_directory_with_dirs(
+            self.recursively_pop_dir,
+            kwargs_create_random_string={
+                'min_len': 1,
+                'max_len': 5})
+        # import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
 
     def tearDown(self):
+        os.system('tree ' + self.program_folder)
         self._program_folder.cleanup()
 
     def test_primitive_name(self):
@@ -146,8 +181,8 @@ class TestBatchRenamer(unittest.TestCase):
         # Testing with sequence of allowed strings with some underscore
         # sequence:
 
-        call_f = lambda: create_random_string(string.ascii_lowercase,
-                                              min_len=2, max_len=100)
+        def call_f(): return create_random_string(string.ascii_lowercase,
+                                                  min_len=2, max_len=100)
 
         for s in (call_f() for x in range(N)):
             cutting_point = random.randint(1, len(s) - 1)
@@ -158,12 +193,10 @@ class TestBatchRenamer(unittest.TestCase):
 
     def test_add_trailing_number(self):
         # 10k max size takes some time.
-        iterable_sizes = (10 ** x for x in range(1, 5))
+        iterable_sizes = (10 ** x for x in range(1, 6))
         for size in iterable_sizes:
             for s in add_trailing_number(
-                 create_random_string(set('a'),
-                                      min_len=1,
-                                      max_len=1),
+                    ('a' for x in range(size)),
                     n=size):
                 self.assertEqual(len(s), round(math.log(size, 10) + 2))
 
