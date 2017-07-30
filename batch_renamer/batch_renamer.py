@@ -1,5 +1,4 @@
-"""
-Auxiliar functions for main program.
+"""Auxiliar functions for main program.
 
 Multi
 Line
@@ -18,20 +17,19 @@ import os
 import datetime
 import math
 
-# pylama: ignore=E127
+# pylama: ignore=E127,D407,D406
 
 try:
     from unidecode import unidecode
 except ImportError:
     def unidecode(x):
-        u"""Dummy function in case unidecode package is not present."""
+        """Declare dummy function in case unidecode package is not present."""
         return x
 
 
 # TODO: prefix iso mod date is a different function. Move it to another one.
 def primitive_name(x):
-    """
-    Create a primitive name from string x.
+    """Create a primitive name from string x.
 
     Arguments:
         x (str): string to be converted to primitive name.
@@ -76,16 +74,16 @@ def primitive_name(x):
     return os.path.join(os.path.dirname(x), basename)
 
 
-def add_trailing_number(iterable, suffix='_', n=None):
-    """
-    Add trailing number to strings in iterable.
+def add_trailing_number(iterable_of_strs, suffix='_', n=None):
+    """Add trailing number to strings in iterable_of_strs.
 
     Add a trailing number to string over and over again until there is not a
     file with that name.
 
     Arguments:
-        iterable (tuple): iterable with strings to have trailing numbers added
-        to it.
+        iterable_of_strs (tuple): iterable_of_strs with strings to have
+        trailing numbers added to it.
+    TODO: add full description.
 
     Returns:
         map: strings with added trailing numbers.
@@ -97,19 +95,18 @@ def add_trailing_number(iterable, suffix='_', n=None):
     """
     if n is None:
         try:
-            decimal_places = math.ceil(math.log(len(iterable), 10))
+            decimal_places = math.ceil(math.log(len(iterable_of_strs), 10))
         except TypeError:
             decimal_places = 0
     else:
         decimal_places = math.ceil(math.log(n, 10))
     return map(lambda i: i[1] + suffix + '{0:0{1}d}'.format(i[0],
                                                             decimal_places),
-               enumerate(iterable))
+               enumerate(iterable_of_strs))
 
 
 def prefix_iso_mod_date(file_path):
-    """
-    Prefix a filepath with a 'YYYY_MM_DD_' prefix according to mod date.
+    """Prefix a filepath with a 'YYYY_MM_DD_' prefix according to mod date.
 
     Arguments:
         file_path (str): string to have a prefix added to.
@@ -120,6 +117,7 @@ def prefix_iso_mod_date(file_path):
     Examples:
         >>> prefix_iso_mod_date('/tmp/dummy.txt')
         '/tmp/2017_01_01_dummy.txt'
+
     """
     basename = os.path.basename(file_path)
     iso_prefix = re.search('^[0-9]{8}_', basename)
