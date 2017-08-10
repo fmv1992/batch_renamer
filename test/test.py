@@ -1,3 +1,10 @@
+"""Test the batch_renamer module.
+
+Tests should be:
+    1) modular
+    2) repeatable (like setting N=100)
+"""
+
 import string
 import random
 import os
@@ -5,8 +12,11 @@ import unittest
 import tempfile
 import datetime
 import math
+import hashlib
+import sys
 
 from batch_renamer.batch_renamer import primitive_name, generate_folder_structure, add_trailing_number, prefix_iso_mod_date  # noqa
+import batch_renamer.main as brm
 
 
 # pylama:ignore=D100,D101,D102,D103,E731
@@ -97,7 +107,6 @@ def recursive_populate_directory_with_dirs(
         n_min_dirs=0,
         n_max_dirs=3,
         kwargs_create_random_string=dict()):
-    # import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
     populate_dirs = [root_dir, ]
     for i in range(max_depth):
         new_dirs = list()
@@ -123,12 +132,18 @@ def recursive_populate_directory_with_files():
 
 class TestBatchRenamer(unittest.TestCase):
 
+    # Store original sys.argv because some tests override those to simulate CLI
+    # calls.
+    _original_sys_argv = sys.argv.copy()
+
     def setUp(self):
         self._program_folder = tempfile.TemporaryDirectory()
         self.program_folder = os.path.abspath(self._program_folder.name)
+        # Create the config folder.
         self.config_folder = os.path.abspath(os.path.join(
             self.program_folder,
             'config_folder'))
+        # TODO: Populate the config folder.
         os.mkdir(self.config_folder)
         self.compliant_folder = os.path.abspath(os.path.join(
             self.program_folder,
@@ -142,8 +157,7 @@ class TestBatchRenamer(unittest.TestCase):
             self.program_folder,
             'recursively_pop_dir'))
         os.mkdir(self.recursively_pop_dir)
-        # import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
-        # TODO: why now?
+        # TODO: May help with 'test_prefix_iso_mod_date'.
         self.now = datetime.datetime.now()
         # Initialize excl_symbols_folder.
         populate_directory_with_files(
@@ -160,12 +174,92 @@ class TestBatchRenamer(unittest.TestCase):
             kwargs_create_random_string={
                 'min_len': 1,
                 'max_len': 5})
-        # import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+        # Create historyfile.
+        self.historyfile = os.path.join(self.config_folder, 'historyfile.txt')
+        os.mknod(self.historyfile)
+        # Create excludepatternfile.
+        self.excludepatternfile = os.path.join(self.config_folder,
+                                               'excludepatternfile.txt')
+        os.mknod(self.excludepatternfile)
 
     def tearDown(self):
         os.system('tree ' + self.program_folder)
         self._program_folder.cleanup()
+        sys.argv = self._original_sys_argv
 
+    # Helper functions to construct 'real' command line invocations.
+    def emulate_cli_arguments(
+            self,
+            arg_input=None,
+            arg_historyfile=None,
+            arg_excludepatternfile=None,
+            arg_verbose=None,
+            arg_prefixisomoddate=None,
+            arg_dryrun=None,):
+        # Intercept created arguments.
+        new_sys_argv = []
+        # Input.
+        new_sys_argv.append('--input')
+        new_sys_argv.append(arg_input)
+        # History file.
+        new_sys_argv.append('--historyfile')
+        new_sys_argv.append(arg_historyfile)
+        # Exclude pattern file.
+        new_sys_argv.append('--excludepatternfile')
+        new_sys_argv.append(arg_excludepatternfile)
+        # Verbose.
+        if arg_verbose:
+            new_sys_argv.append('--verbose')
+        # Prefix with iso modification date.
+        if arg_prefixisomoddate:
+            new_sys_argv.append('--prefixisomoddate')
+        # Dry run.
+        if arg_dryrun:
+            new_sys_argv.append('--dryrun')
+        # Modify the system argv.
+        sys.argv = [sys.argv[0], ] + new_sys_argv
+        parser = brm.create_batch_renamer_parser()
+        args = parser.parse_args()
+        # Check those arguments again.
+        brm.check_arguments(args)
+        # Return the modified arguments.
+        return args
+
+    def get_path_representation_hash(self, path):
+        m1 = hashlib.md5()
+        representation = map(lambda x: '\n'.join((x[0], *x[1], *x[2])),
+                             os.walk(path))
+        representation = ''.join(representation)
+        m1.update(representation.encode(encoding='utf8'))
+        return m1.digest()
+
+    # TODO: remove me and put some real tests up.
+    def test_has_changed(self):
+        before_hash = self.get_path_representation_hash(self.compliant_folder)
+        args = self.emulate_cli_arguments(
+            arg_input=self.non_compliant_folder,
+            arg_historyfile=self.historyfile,
+            arg_excludepatternfile=self.excludepatternfile,
+            arg_verbose=None,
+            arg_prefixisomoddate=None,
+            arg_dryrun=None,)
+        after_hash = self.get_path_representation_hash(self.compliant_folder)
+        # TODO: Fix this test ASAP.
+        # brm.main(args)
+        # self.assertNotEqual(before_hash, after_hash)
+        pass
+
+    def test_bogus_cli_calls(self):
+        """Test wrong CLI calls."""
+        # TODO: implement.
+        pass
+
+    def test_valid_cli_calls(self):
+        """Test wrong CLI calls."""
+        # TODO: implement.
+        pass
+
+    # Test primitive functions.
     def test_primitive_name(self):
         # Testing with allowed strings.
         for _, s in zip(range(N), create_random_string(ALLOWED_SYMBOLS)):

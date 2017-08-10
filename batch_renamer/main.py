@@ -29,17 +29,11 @@ import time
 import collections  # Used to find duplicate values and thus add
                     # a suffix accordingly. #noqa
 import re
-from batch_renamer import primitive_name, add_trailing_number, \
+from .batch_renamer import primitive_name, add_trailing_number, \
     filter_out_paths_to_be_renamed, directory_generation_starting_from_files
 
 
-def parse_arguments():
-    """Parse arguments provided in the command line.
-
-    Returns:
-        argparse.ArgumentParser: the parsed arguments.
-
-    """
+def create_batch_renamer_parser():
     # Arguments parsing block. {{{
     parser = argparse.ArgumentParser()
 
@@ -80,6 +74,17 @@ def parse_arguments():
         'the files.',
         action='store_true',
         default=False)
+
+    return parser
+
+def parse_arguments():
+    """Parse arguments provided in the command line.
+
+    Returns:
+        argparse.ArgumentParser: the parsed arguments.
+
+    """
+    parser = create_batch_renamer_parser()
 
     # Checking parsed args and correcting.
     args = parser.parse_args()
@@ -175,7 +180,7 @@ def execute_renamint():
     pass
 
 
-def main():
+def main(args):
     """Execute the actual renaming of files."""
     # Constants declaration {{{
     # Allowed regex to filter files that need to be renamed.
@@ -186,8 +191,6 @@ def main():
     #   4) Dots
     RE_COMPILED_NOT_ALLOWED_EXPR = re.compile('[^a-z0-9\_\.]', flags=0)
     # }}}
-
-    args = parse_arguments()
 
     logging_setup(args.verbose)
 
@@ -291,4 +294,5 @@ def main():
         # }}}
 
 if __name__ == '__main__':
-    main()
+    args = parse_arguments()
+    main(args)
