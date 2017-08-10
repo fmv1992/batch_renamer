@@ -183,7 +183,7 @@ class TestBatchRenamer(unittest.TestCase):
         os.mknod(self.excludepatternfile)
 
     def tearDown(self):
-        os.system('tree ' + self.program_folder)
+        # os.system('tree ' + self.program_folder)
         self._program_folder.cleanup()
         sys.argv = self._original_sys_argv
 
@@ -235,19 +235,21 @@ class TestBatchRenamer(unittest.TestCase):
 
     # TODO: remove me and put some real tests up.
     def test_has_changed(self):
-        before_hash = self.get_path_representation_hash(self.compliant_folder)
+        before_hash = self.get_path_representation_hash(self.non_compliant_folder)
+        # Put null regex on exclude pattern file.
+        # TODO: empty excludepatternfile should match no paths.
+        with open(self.excludepatternfile, 'wt') as eptf:
+            eptf.write('$^')
         args = self.emulate_cli_arguments(
             arg_input=self.non_compliant_folder,
             arg_historyfile=self.historyfile,
             arg_excludepatternfile=self.excludepatternfile,
-            arg_verbose=None,
+            arg_verbose=True,
             arg_prefixisomoddate=None,
             arg_dryrun=None,)
-        after_hash = self.get_path_representation_hash(self.compliant_folder)
-        # TODO: Fix this test ASAP.
-        # brm.main(args)
-        # self.assertNotEqual(before_hash, after_hash)
-        pass
+        brm.main(args)
+        after_hash = self.get_path_representation_hash(self.non_compliant_folder)
+        self.assertNotEqual(before_hash, after_hash)
 
     def test_bogus_cli_calls(self):
         """Test wrong CLI calls."""

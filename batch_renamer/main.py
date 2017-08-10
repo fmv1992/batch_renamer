@@ -122,7 +122,10 @@ def logging_setup(verbose):
 
 
 def check_arguments(args):
-    """Check if arguments are valid."""
+    """Check if arguments are valid.
+
+    Do not initalize them.
+    """
     # Arguments checking {{{
     # Check if input, historyfile and excludepatternfile exist.
     test_input_paths = list(map(os.path.exists, args.input))
@@ -136,12 +139,8 @@ def check_arguments(args):
         # It is better to create a dictionary of 'files' and 'folders' in order
         # to process all the files first. Otherwise some file names would be
         # dependent on folders renames.
-        input_args = dict()
-        input_args['files'] = list(filter(os.path.isfile, args.input))
-        input_args['folders'] = list(filter(os.path.isdir, args.input))
         logging.info('Processing paths: {0}'.format(
             '\n\t'.join(args.input)))
-
     if not os.path.isfile(args.historyfile):
         raise FileNotFoundError(
             'History file {0} does not exist'.format(args.historyfile))
@@ -153,16 +152,7 @@ def check_arguments(args):
             'Exclude pattern file {0} does not exist'.format(
                 args.excludepatternfile))
     else:  # Initializes the excluded patterns list of file exists.
-        with open(args.excludepatternfile, 'rt') as excludepatternfile:
-            excluded_patterns = excludepatternfile.read().splitlines()
-            excluded_patterns = list(
-                filter(
-                    lambda x: False if re.search('^\#', x) else True,
-                    excluded_patterns))
-        logging.info('Exclude pattern file: {0}'.format(
-            args.excludepatternfile))
-        logging.info('Excluding the following patterns:\n\t{0}'.format(
-            '\n\t'.join(excluded_patterns)))
+        logging.info('History file: {0}'.format(args.excludepatternfile))
 
     # Parsing the prefix iso mod date mode.
     if args.prefixisomoddate:
@@ -217,6 +207,16 @@ def main(args):
     # A different approach is to do this in mini batches, executing the job on
     # per folder batches.
     # This will be the approached used on this software.
+    with open(args.excludepatternfile, 'rt') as excludepatternfile:
+        excluded_patterns = excludepatternfile.read().splitlines()
+        excluded_patterns = list(
+            filter(
+                lambda x: False if re.search('^\#', x) else True,
+                excluded_patterns))
+    logging.info('Exclude pattern file: {0}'.format(
+        args.excludepatternfile))
+    logging.info('Excluding the following patterns:\n\t{0}'.format(
+        '\n\t'.join(excluded_patterns)))
     if excluded_patterns:
         list_of_excl_regex_patterns = list(map(
             re.compile, excluded_patterns))
@@ -230,6 +230,9 @@ def main(args):
         # Then we filter the excluded patterns given in excludepatternfile in
         # list_of_excl_regex_patterns.
         # Both are accomplisshed in one step.
+        input_args = dict()
+        input_args['files'] = list(filter(os.path.isfile, args.input))
+        input_args['folders'] = list(filter(os.path.isdir, args.input))
         for recurse in directory_generation_starting_from_files(
                 input_args['files'],
                 input_args['folders']):
@@ -239,7 +242,7 @@ def main(args):
                 list_of_excl_regex_patterns,
                 args.prefixisomoddate)
             new_names = list(
-                map(lambda x: primitive_name(x, args.prefixisomoddate),
+                map(lambda x: primitive_name(x),
                     paths_to_rename))
 
             # Solve the duplicate names problem by first creating a default
@@ -253,7 +256,8 @@ def main(args):
                 k: v for k, v in duplicate_names.items() if len(v) > 1}
             # List is modified inplace: add the trailing number.
             for duplicate_indexes in duplicate_names.values():
-                add_trailing_number(new_names, duplicate_indexes)
+                # TODO: error here, is not modified inplace anymore.
+                new_names = add_trailing_number(new_names, n=len(duplicate_indexes))
 
             list_of_file_renamings = []
             for src, dst in zip(paths_to_rename, new_names):
