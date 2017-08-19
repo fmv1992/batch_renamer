@@ -26,10 +26,11 @@ import os
 import shutil
 import time
 import collections  # Used to find duplicate values and thus add
-                    # a suffix accordingly. #noqa
+# a suffix accordingly. #noqa
 import re
 from .batch_renamer import primitive_name, add_trailing_number, \
     filter_out_paths_to_be_renamed, directory_generation_starting_from_files
+
 
 def load_exclude_pattern_file(cli_args):
     with open(cli_args.excludepatternfile, 'rt') as excludepatternfile:
@@ -51,9 +52,27 @@ def load_exclude_pattern_file(cli_args):
     return list_of_excl_regex_patterns
 
 
+def deduplicate_names(names):
+    # Solve the duplicate names problem by first creating a default dict whose
+    # keys (primitive names) point to the number of indexes. By filtering ones
+    # with more than one index one can find out the duplicate names.
+    duplicate_names = collections.defaultdict(list)
+    for index, item in enumerate(names):
+        duplicate_names[item].append(index)
+    duplicate_names = {k: v for k, v in duplicate_names.items() if len(v) > 1}
+
+    if duplicate_names:
+        # List is modified inplace: add the trailing number.
+        # TODO: XXX urgent need to have more than one batch of duplicate_names
+        # in a single run. The for below must be a two level nested for.
+        for duplicate_indexes in duplicate_names.values():
+            # TODO: error here, is not modified inplace anymore.
+            names = add_trailing_number(names, n=len(duplicate_indexes))
+    return names
+
 
 def create_batch_renamer_parser():
-    # Arguments parsing block. {{{
+    # Arguments parsing block.
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -122,13 +141,12 @@ def parse_arguments():
                     list(map(
                         os.path.abspath,
                         getattr(args, atr))))
-    # }}}
     return args
 
 
 def logging_setup(verbose):
     """Set up logging."""
-    # Activates logging. {{{
+    # Activates logging.
     if verbose is None:
         pass
     if verbose == 1:
@@ -138,7 +156,6 @@ def logging_setup(verbose):
     if verbose == 2:
         # TODO: create a debug utility.
         pass
-    # }}}
     return None
 
 
@@ -147,7 +164,7 @@ def check_arguments(args):
 
     Do not initalize them.
     """
-    # Arguments checking {{{
+    # Arguments checking
     # Check if input, historyfile and excludepatternfile exist.
     test_input_paths = list(map(os.path.exists, args.input))
     if not all(test_input_paths):
@@ -182,7 +199,6 @@ def check_arguments(args):
     # dry run
     if args.dryrun:
         logging.info('Dry run mode: no actual changes will be made')
-    # }}}
     return None
 
 
@@ -202,6 +218,9 @@ def main(args):
     # Load list of excluded regex patterns.
     list_of_excl_regex_patterns = load_exclude_pattern_file(args)
 
+    with open(args.historyfile, 'at') as history_file:
+        history_file.write('NEW ENTRY: ' + time.ctime() + '\n')
+
     # First filtering all the files that need to be renamed with
     # RE_COMPILED_NOT_ALLOWED_EXPR.
     # Then we filter the excluded patterns given in excludepatternfile in
@@ -218,47 +237,31 @@ def main(args):
             RE_COMPILED_NOT_ALLOWED_EXPR,
             list_of_excl_regex_patterns,
             args.prefixisomoddate)
-        new_names = list(
-            map(lambda x: primitive_name(x),
-                paths_to_rename))
+        new_names = list(primitive_name(x) for x in paths_to_rename)
 
-        # Solve the duplicate names problem by first creating a default
-        # dict whose keys (primitive names) point to the number of indexes.
-        # By filtering ones with more than one index one can find out the
-        # duplicate names.
-        duplicate_names = collections.defaultdict(list)
-        for index, item in enumerate(new_names):
-            duplicate_names[item].append(index)
-        duplicate_names = {
-            k: v for k, v in duplicate_names.items() if len(v) > 1}
-        # List is modified inplace: add the trailing number.
-        for duplicate_indexes in duplicate_names.values():
-            # TODO: error here, is not modified inplace anymore.
-            new_names = add_trailing_number(new_names,
-                                            n=len(duplicate_indexes))
+        # Deduplicate names.
+        new_names = deduplicate_names(new_names)
 
         list_of_file_renamings = []
         for src, dst in zip(paths_to_rename, new_names):
-            if os.path.isfile(dst) or os.path.isdir(dst):
-                continue
-            # TODO: move exception to warning.
+            if os.path.exists(dst):
                 raise FileExistsError(
                     'WARNING: WILL NOT OVERWRITE FILE {0} -> {1}'.format(
                         src, dst))
             try:
                 shutil.move(src, dst)
+            except PermissionError:
+                logging.warning(
+                    'PermissionError exception: \'{}\''.format(src))
+            except FileNotFoundError:
+                logging.warning(
+                    'FileNotFound exception: \'{}\''.format(src))
+            else:
                 # Store the file names with quotes escaped.
                 list_of_file_renamings.append((
                     dst.replace("\"", "\\\""),
                     src.replace("\"", "\\\"")))
                 logging.info("mv \"{1}\" \"{0}\"".format(dst, src))
-            except PermissionError:
-                logging.warning(
-                    'PermissionError exception: \'{}\''.format(src))
-            # TODO: fix root causes instead of just skipping
-            except FileNotFoundError:
-                logging.warning(
-                    'FileNotFound exception: \'{}\''.format(src))
         # Revert tuple to preserve renaming order (start with
         # subfolder).
         list_of_file_renamings = reversed(list_of_file_renamings)
@@ -268,14 +271,8 @@ def main(args):
                 x[1]) for x in list_of_file_renamings)
 
         with open(args.historyfile, 'at') as history_file:
-            history_file.write('NEW ENTRY: ' + time.ctime() + '\n')
             history_file.write('\n'.join(list_of_file_renamings))
             history_file.write('\n')
-
-        # Then we can do the actual renaming of files.
-
-        # Second we repeat the same procedure for the subdirectories.
-        # }}}
 
 
 if __name__ == '__main__':
