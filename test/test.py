@@ -19,7 +19,7 @@ from batch_renamer.batch_renamer import primitive_name, generate_folder_structur
 import batch_renamer.main as brm
 
 
-# pylama:ignore=D100,D101,D102,D103,E731
+## pylama:ignore=D100,D101,D102,D103,E731
 PATH_RESERVED_SYMBOLS = set(('\\', '/'))
 ALLOWED_SYMBOLS = set(('_', '.'))
 NON_ALLOWED_SYMBOLS = (set(string.punctuation)
@@ -236,6 +236,9 @@ class TestBatchRenamer(unittest.TestCase):
         m1.update(representation.encode(encoding='utf8'))
         return m1.digest()
 
+
+class TestBatchRenamerNormal(TestBatchRenamer):
+
     # TODO: remove me and put some real tests up.
     def test_has_changed(self):
         before_hash = self.get_path_representation_hash(
@@ -309,6 +312,10 @@ class TestBatchRenamer(unittest.TestCase):
                 self.assertTrue(
                     os.path.basename(prefix_iso_mod_date(file_path))
                     .startswith(self.now.strftime('%Y%m%d_')))
+
+
+class TestBatchRenamerRevert(TestBatchRenamer):
+    pass
 
 
 if __name__ == "__main__":
