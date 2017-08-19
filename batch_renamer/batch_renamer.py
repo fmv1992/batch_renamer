@@ -203,8 +203,7 @@ def directory_generation_starting_from_files(
         # iterate over an entry.
         yield [one_file]
     for one_dir in list_of_directories_to_recurse:
-        for dirpath, _, filenames in os.walk(
-                one_dir, topdown=False):
+        for dirpath, _, filenames in os.walk(one_dir, topdown=False):
             yield [os.path.join(dirpath, fn) for fn in filenames] + [dirpath]
 
 
