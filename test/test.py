@@ -95,8 +95,8 @@ def populate_directory_with_dirs(
 
     for dirname in (call_f() for x in range(
             random.randint(n_min_dirs, n_max_dirs))):
-        # print(dirname)
-        os.mkdir(dirname)
+        if not os.path.isdir(dirname):
+            os.mkdir(dirname)
 
     return None
 
