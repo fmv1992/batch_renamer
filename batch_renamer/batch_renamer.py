@@ -152,28 +152,13 @@ def filter_out_paths_to_be_renamed(
         list: A list contaning paths to be renamed.
 
     """
-    # If the compiled regex to trigger renaming returns something keep this
-    # entry.
-    # Only considers basename in order to do the renaming.
-    def has_to_be_renamed_if_match(regex, filepath):
-        u"""Determine wheter string has to be renamed if has a match."""
-        if regex.search(os.path.basename(filepath)):
-            return True
-        else:
-            return False
-
     paths_to_rename = filter(
-        lambda x: has_to_be_renamed_if_match(
-            compiled_regex_to_trigger_renaming,
-            x),
+        compiled_regex_to_trigger_renaming.search,
         list_of_paths)
     if prefixisomoddate:
-        has_not_prefixisomoddate_regex = re.compile(
-            '^(?![0-9]{8}_)')
+        has_not_prefixisomoddate_regex = re.compile('^(?![0-9]{8}_)')
         paths_to_rename_prefixidomoddate = filter(
-            lambda x: has_to_be_renamed_if_match(
-                has_not_prefixisomoddate_regex,
-                x),
+            has_not_prefixisomoddate_regex.search,
             list_of_paths)
         # This allows directories to come before files.
         paths_to_rename = set(paths_to_rename) \
