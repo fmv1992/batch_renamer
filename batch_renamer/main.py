@@ -1,6 +1,5 @@
 # vim: set fileformat=unix foldtext=foldtext() foldmethod=marker nowrap :
-"""
-This module does a batch renaming of your files according to specific rules.
+"""Execute a batch renaming of your files according to specific rules.
 
 Mainly it takes off special characters and dashes leaving only letters,
 numbers, underscores and periods.
@@ -19,7 +18,7 @@ Operation mode:
 # # pylama:skip=1
 # Ignore the % in formatting in logging (w1202)
 # The '# noqa' ignores one line from pylama
-# pylama:ignore=W1202
+# pylama:ignore=W1202,D103,D406,D407
 
 import logging
 import argparse
@@ -77,6 +76,7 @@ def create_batch_renamer_parser():
 
     return parser
 
+
 def parse_arguments():
     """Parse arguments provided in the command line.
 
@@ -104,6 +104,7 @@ def parse_arguments():
                         getattr(args, atr))))
     # }}}
     return args
+
 
 def logging_setup(verbose):
     """Set up logging."""
@@ -189,8 +190,8 @@ def main(args):
     # Ignore patterns.
     # Take prefix iso mod date into account.
     # If not dry run:
-        # Log.
-        # Rename.
+    # Log.
+    # Rename.
     # Else just print.
 
     # The most scallable approach would be:
@@ -257,7 +258,8 @@ def main(args):
             # List is modified inplace: add the trailing number.
             for duplicate_indexes in duplicate_names.values():
                 # TODO: error here, is not modified inplace anymore.
-                new_names = add_trailing_number(new_names, n=len(duplicate_indexes))
+                new_names = add_trailing_number(new_names,
+                                                n=len(duplicate_indexes))
 
             list_of_file_renamings = []
             for src, dst in zip(paths_to_rename, new_names):
@@ -296,6 +298,7 @@ def main(args):
 
         # Second we repeat the same procedure for the subdirectories.
         # }}}
+
 
 if __name__ == '__main__':
     args = parse_arguments()
