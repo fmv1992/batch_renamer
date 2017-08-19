@@ -31,6 +31,26 @@ import re
 from .batch_renamer import primitive_name, add_trailing_number, \
     filter_out_paths_to_be_renamed, directory_generation_starting_from_files
 
+def load_exclude_pattern_file(cli_args):
+    with open(cli_args.excludepatternfile, 'rt') as excludepatternfile:
+        excluded_patterns = excludepatternfile.read().splitlines()
+        excluded_patterns = list(
+            filter(
+                lambda x: False if re.search('^\#', x) else True,
+                excluded_patterns))
+    logging.info('Exclude pattern file: {0}'.format(
+        cli_args.excludepatternfile))
+    logging.info('Excluding the following patterns:\n\t{0}'.format(
+        '\n\t'.join(excluded_patterns)))
+    if excluded_patterns:
+        list_of_excl_regex_patterns = list(map(
+            re.compile, excluded_patterns))
+    else:
+        list_of_excl_regex_patterns = list()
+
+    return list_of_excl_regex_patterns
+
+
 
 def create_batch_renamer_parser():
     # Arguments parsing block. {{{
@@ -173,126 +193,84 @@ def execute_renamint():
 
 def main(args):
     """Execute the actual renaming of files."""
-    # Constants declaration {{{
-    # Allowed regex to filter files that need to be renamed.
-    # That is characters that are NOT:
-    #   1) Lowercase letters
-    #   2) Numbers
-    #   3) Underscores
-    #   4) Dots
+    # Constants declaration.
     RE_COMPILED_NOT_ALLOWED_EXPR = re.compile('[^a-z0-9\_\.]', flags=0)
-    # }}}
 
+    # Setup logging.
     logging_setup(args.verbose)
 
-    # Do the actual renaming {{{
-    # Write to history file.
-    # Ignore patterns.
-    # Take prefix iso mod date into account.
-    # If not dry run:
-    # Log.
-    # Rename.
-    # Else just print.
+    # Load list of excluded regex patterns.
+    list_of_excl_regex_patterns = load_exclude_pattern_file(args)
 
-    # The most scallable approach would be:
-    #   1) Create a list of all files.
-    #   2) Filter the ones who need to be renamed.
-    #   3) Resolve all conflicts.
-    #   4) Do the renaming.
-    #   5) (Take all the logging into account.)
-    # The problem with this approach is that a very long list could be
-    # generated in a folder with a lot of subfolders and files. Maybe a list
-    # with some thousand entries is not a very elegant solution. A regular root
-    # folder has circa 1e6 inodes for example.
-    #
-    # A different approach is to do this in mini batches, executing the job on
-    # per folder batches.
-    # This will be the approached used on this software.
-    with open(args.excludepatternfile, 'rt') as excludepatternfile:
-        excluded_patterns = excludepatternfile.read().splitlines()
-        excluded_patterns = list(
-            filter(
-                lambda x: False if re.search('^\#', x) else True,
-                excluded_patterns))
-    logging.info('Exclude pattern file: {0}'.format(
-        args.excludepatternfile))
-    logging.info('Excluding the following patterns:\n\t{0}'.format(
-        '\n\t'.join(excluded_patterns)))
-    if excluded_patterns:
-        list_of_excl_regex_patterns = list(map(
-            re.compile, excluded_patterns))
-    else:
-        list_of_excl_regex_patterns = list()
+    # First filtering all the files that need to be renamed with
+    # RE_COMPILED_NOT_ALLOWED_EXPR.
+    # Then we filter the excluded patterns given in excludepatternfile in
+    # list_of_excl_regex_patterns.
+    # Both are accomplisshed in one step.
+    input_args = dict()
+    input_args['files'] = list(filter(os.path.isfile, args.input))
+    input_args['folders'] = list(filter(os.path.isdir, args.input))
+    for recurse in directory_generation_starting_from_files(
+            input_args['files'],
+            input_args['folders']):
+        paths_to_rename = filter_out_paths_to_be_renamed(
+            recurse,
+            RE_COMPILED_NOT_ALLOWED_EXPR,
+            list_of_excl_regex_patterns,
+            args.prefixisomoddate)
+        new_names = list(
+            map(lambda x: primitive_name(x),
+                paths_to_rename))
 
-    with open(args.historyfile, 'at') as history_file:
-        history_file.write('NEW ENTRY: ' + time.ctime() + '\n')
-        # First filtering all the files that need to be renamed with
-        # RE_COMPILED_NOT_ALLOWED_EXPR.
-        # Then we filter the excluded patterns given in excludepatternfile in
-        # list_of_excl_regex_patterns.
-        # Both are accomplisshed in one step.
-        input_args = dict()
-        input_args['files'] = list(filter(os.path.isfile, args.input))
-        input_args['folders'] = list(filter(os.path.isdir, args.input))
-        for recurse in directory_generation_starting_from_files(
-                input_args['files'],
-                input_args['folders']):
-            paths_to_rename = filter_out_paths_to_be_renamed(
-                recurse,
-                RE_COMPILED_NOT_ALLOWED_EXPR,
-                list_of_excl_regex_patterns,
-                args.prefixisomoddate)
-            new_names = list(
-                map(lambda x: primitive_name(x),
-                    paths_to_rename))
+        # Solve the duplicate names problem by first creating a default
+        # dict whose keys (primitive names) point to the number of indexes.
+        # By filtering ones with more than one index one can find out the
+        # duplicate names.
+        duplicate_names = collections.defaultdict(list)
+        for index, item in enumerate(new_names):
+            duplicate_names[item].append(index)
+        duplicate_names = {
+            k: v for k, v in duplicate_names.items() if len(v) > 1}
+        # List is modified inplace: add the trailing number.
+        for duplicate_indexes in duplicate_names.values():
+            # TODO: error here, is not modified inplace anymore.
+            new_names = add_trailing_number(new_names,
+                                            n=len(duplicate_indexes))
 
-            # Solve the duplicate names problem by first creating a default
-            # dict whose keys (primitive names) point to the number of indexes.
-            # By filtering ones with more than one index one can find out the
-            # duplicate names.
-            duplicate_names = collections.defaultdict(list)
-            for index, item in enumerate(new_names):
-                duplicate_names[item].append(index)
-            duplicate_names = {
-                k: v for k, v in duplicate_names.items() if len(v) > 1}
-            # List is modified inplace: add the trailing number.
-            for duplicate_indexes in duplicate_names.values():
-                # TODO: error here, is not modified inplace anymore.
-                new_names = add_trailing_number(new_names,
-                                                n=len(duplicate_indexes))
+        list_of_file_renamings = []
+        for src, dst in zip(paths_to_rename, new_names):
+            if os.path.isfile(dst) or os.path.isdir(dst):
+                continue
+            # TODO: move exception to warning.
+                raise FileExistsError(
+                    'WARNING: WILL NOT OVERWRITE FILE {0} -> {1}'.format(
+                        src, dst))
+            try:
+                shutil.move(src, dst)
+                # Store the file names with quotes escaped.
+                list_of_file_renamings.append((
+                    dst.replace("\"", "\\\""),
+                    src.replace("\"", "\\\"")))
+                logging.info("mv \"{1}\" \"{0}\"".format(dst, src))
+            except PermissionError:
+                logging.warning(
+                    'PermissionError exception: \'{}\''.format(src))
+            # TODO: fix root causes instead of just skipping
+            except FileNotFoundError:
+                logging.warning(
+                    'FileNotFound exception: \'{}\''.format(src))
+        # Revert tuple to preserve renaming order (start with
+        # subfolder).
+        list_of_file_renamings = reversed(list_of_file_renamings)
+        list_of_file_renamings = (
+            'mv "{0}" "{1}"'.format(
+                x[0],
+                x[1]) for x in list_of_file_renamings)
 
-            list_of_file_renamings = []
-            for src, dst in zip(paths_to_rename, new_names):
-                if os.path.isfile(dst) or os.path.isdir(dst):
-                    continue
-                # TODO: move exception to warning.
-                    raise FileExistsError(
-                        'WARNING: WILL NOT OVERWRITE FILE {0} -> {1}'.format(
-                            src, dst))
-                try:
-                    shutil.move(src, dst)
-                    # Store the file names with quotes escaped.
-                    list_of_file_renamings.append((
-                        dst.replace("\"", "\\\""),
-                        src.replace("\"", "\\\"")))
-                    logging.info("mv \"{1}\" \"{0}\"".format(dst, src))
-                except PermissionError:
-                    logging.warning(
-                        'PermissionError exception: \'{}\''.format(src))
-                # TODO: fix root causes instead of just skipping
-                except FileNotFoundError:
-                    logging.warning(
-                        'FileNotFound exception: \'{}\''.format(src))
-            # Revert tuple to preserve renaming order (start with
-            # subfolder).
-            list_of_file_renamings = reversed(list_of_file_renamings)
-            list_of_file_renamings = (
-                'mv "{0}" "{1}"'.format(
-                    x[0],
-                    x[1]) for x in list_of_file_renamings)
-
+        with open(args.historyfile, 'at') as history_file:
+            history_file.write('NEW ENTRY: ' + time.ctime() + '\n')
             history_file.write('\n'.join(list_of_file_renamings))
-        history_file.write('\n')
+            history_file.write('\n')
 
         # Then we can do the actual renaming of files.
 
