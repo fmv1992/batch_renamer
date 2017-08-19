@@ -95,8 +95,11 @@ def populate_directory_with_dirs(
 
     for dirname in (call_f() for x in range(
             random.randint(n_min_dirs, n_max_dirs))):
+        # TODO: need to compensate this case on the else part.
         if not os.path.isdir(dirname):
             os.mkdir(dirname)
+        else:
+            pass
 
     return None
 
@@ -235,7 +238,8 @@ class TestBatchRenamer(unittest.TestCase):
 
     # TODO: remove me and put some real tests up.
     def test_has_changed(self):
-        before_hash = self.get_path_representation_hash(self.non_compliant_folder)
+        before_hash = self.get_path_representation_hash(
+            self.non_compliant_folder)
         # Put null regex on exclude pattern file.
         # TODO: empty excludepatternfile should match no paths.
         with open(self.excludepatternfile, 'wt') as eptf:
@@ -248,7 +252,8 @@ class TestBatchRenamer(unittest.TestCase):
             arg_prefixisomoddate=None,
             arg_dryrun=None,)
         brm.main(args)
-        after_hash = self.get_path_representation_hash(self.non_compliant_folder)
+        after_hash = self.get_path_representation_hash(
+            self.non_compliant_folder)
         self.assertNotEqual(before_hash, after_hash)
 
     def test_bogus_cli_calls(self):
