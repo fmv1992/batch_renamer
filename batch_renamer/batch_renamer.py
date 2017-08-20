@@ -153,7 +153,8 @@ def filter_out_paths_to_be_renamed(
 
     """
     paths_to_rename = filter(
-        compiled_regex_to_trigger_renaming.search,
+        lambda x: compiled_regex_to_trigger_renaming.search(
+            os.path.basename(x)),
         list_of_paths)
     if prefixisomoddate:
         has_not_prefixisomoddate_regex = re.compile('^(?![0-9]{8}_)')

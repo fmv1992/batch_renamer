@@ -19,121 +19,143 @@ from batch_renamer.batch_renamer import primitive_name, generate_folder_structur
 import batch_renamer.main as brm
 
 
-## pylama:ignore=D100,D101,D102,D103,E731
-PATH_RESERVED_SYMBOLS = set(('\\', '/'))
+# pylama:ignore=D100,D101,D102,D103,E731
 ALLOWED_SYMBOLS = set(('_', '.'))
+ALLOWED_CHARS = set(string.ascii_lowercase)
+ALLOWED = ALLOWED_SYMBOLS | ALLOWED_CHARS
+
+PATH_RESERVED_SYMBOLS = set(('\\', '/'))
 NON_ALLOWED_SYMBOLS = (set(string.punctuation)
                        - (ALLOWED_SYMBOLS | PATH_RESERVED_SYMBOLS))
-N = 500  # Number of strings in each folder.
+NON_ALLOWED_CHARS = set(string.ascii_uppercase)
+
+# Number of tests to run.
+N = 10  # Number of strings in each folder.
 
 
-def create_random_string(allowed_chars=string.ascii_lowercase,
-                         min_len=10,
-                         max_len=100):
-    return ''.join(random.choice(tuple(allowed_chars)) for x in
+def create_random_string(charset,
+                         min_len=5,
+                         max_len=10):
+    charset_tuple = tuple(charset)
+    return ''.join(random.choice(charset_tuple) for x in
                    range(random.randint(min_len, max_len)))
 
 
-def create_file_extension(extension=None):
-    if extension is None:
-        all_extensions = ('txt', 'mp3', 'py', 'tar.xz', '.tar', )
-        extension = random.choice(all_extensions)
-    return extension
+def create_file_extension():
+    all_extensions = ('.txt', '.mp3', '.py', '.tar.xz', '.tar', )
+    return random.choice(all_extensions)
 
 
 def create_filename(
-        root_dir,
-        include_extension=False,
-        kwargs_create_file_extension=dict(),
-        kwargs_create_random_string=dict()):
-    if include_extension:
-        extension = create_file_extension(**kwargs_create_file_extension)
+        charset,
+        root_dir):
+    if random.random() < 0.5:
+        extension = create_file_extension()
     else:
         extension = ''
-    return os.path.join(
-        root_dir,
-        create_random_string(**kwargs_create_random_string)
-        + extension)
+    return os.path.join(root_dir, create_random_string(charset) + extension)
 
 
-def create_dirname(root_dir, kwargs_create_random_string=dict()):
-    return os.path.join(root_dir,
-                        create_random_string(**kwargs_create_random_string))
+def create_dirname(charset, root_dir):
+    return os.path.join(root_dir, create_random_string(charset))
 
 
 def populate_directory_with_files(
+        charset,
         root_dir,
-        include_extension=False,
         n_min_files=5,
-        n_max_files=10,
-        kwargs_create_file_extension=dict(),
-        kwargs_create_random_string=dict()):
+        n_max_files=10):
 
-    def call_f(): return create_filename(
-        root_dir,
-        include_extension=include_extension,
-        kwargs_create_file_extension=kwargs_create_file_extension,
-        kwargs_create_random_string=kwargs_create_random_string)
+    n_files = random.randint(n_min_files, n_max_files)
 
-    for fname in (call_f() for x in range(
-            random.randint(n_min_files, n_max_files))):
-        # print(fname)
-        os.mknod(fname)
-
-    return None
+    i = 0
+    while i < n_files:
+        fname = create_filename(charset, root_dir)
+        if not os.path.isfile(fname):
+            os.mknod(fname)
+            i += 1
 
 
 def populate_directory_with_dirs(
+        charset,
         root_dir,
         n_min_dirs=5,
-        n_max_dirs=10,
-        kwargs_create_random_string=dict()):
+        n_max_dirs=10):
 
-    def call_f(): return create_dirname(
-        root_dir,
-        kwargs_create_random_string=kwargs_create_random_string)
+    n_files = random.randint(n_min_dirs, n_max_dirs)
 
-    for dirname in (call_f() for x in range(
-            random.randint(n_min_dirs, n_max_dirs))):
-        # TODO: need to compensate this case on the else part.
-        if not os.path.isdir(dirname):
-            os.mkdir(dirname)
-        else:
-            pass
-
-    return None
+    i = 0
+    while i < n_files:
+        fname = create_dirname(charset, root_dir)
+        if not os.path.exists(fname):
+            os.mkdir(fname)
+            i += 1
 
 
 def recursive_populate_directory_with_dirs(
+        charset,
         root_dir,
-        max_depth=5,
-        n_min_dirs=0,
-        n_max_dirs=3,
-        kwargs_create_random_string=dict()):
-    populate_dirs = [root_dir, ]
-    for i in range(max_depth):
-        new_dirs = list()
-        for d in populate_dirs:
-            branching = random.randint(n_min_dirs, n_max_dirs)
+        depth=5,
+        **kwargs_populate_directory_with_dirs):
+
+    dirs_to_populate = [root_dir, ]
+
+    for _ in range(depth):
+        update_dirs_to_populate = list()
+        for one_dir in dirs_to_populate:
             populate_directory_with_dirs(
-                d,
-                branching,
-                branching,
-                kwargs_create_random_string=kwargs_create_random_string)
-            new_dirs += list(map(
-                lambda x: os.path.join(d, x),
-                filter(os.path.isdir,
-                       map(lambda x: os.path.join(d, x),
-                           os.listdir(d)))))
-            populate_dirs = new_dirs.copy()
+                charset,
+                one_dir,
+                **kwargs_populate_directory_with_dirs)
+            for new_dirs in filter(os.path.isdir,
+                                   os.listdir(one_dir)):
+                update_dirs_to_populate.append(os.path.join(one_dir, new_dirs))
+        dirs_to_populate = update_dirs_to_populate.copy()
 
 
-def recursive_populate_directory_with_files():
-    # Ensure in every node.
-    pass
+def recursive_populate_directory_with_files(
+        charset,
+        root_dir,
+        **kwargs_populate_directory_with_files):
+
+    all_directories = map(
+        lambda x: x[0],
+        os.walk(root_dir))
 
 
-class TestBatchRenamer(unittest.TestCase):
+    for one_dir in all_directories:
+        populate_directory_with_files(
+            charset,
+            one_dir,
+            **kwargs_populate_directory_with_files)
+
+
+class MetaCreateSerializedTests(type):
+    """Metaclas to create N number of tests.
+
+    For each method of the object starting with 'test_' create N equal tests.
+
+    """
+
+    def __new__(mcs, name, bases, namespace):  # noqa
+        test_serialization = []
+        test_deletions = []
+        for one_name in namespace:
+            namespace_additions = dict()
+            if one_name.startswith('test_'):
+                for i in range(N):
+                    namespace_additions[
+                        one_name + '_' + str(i)] = namespace[one_name]
+                test_serialization.append(namespace_additions)
+                test_deletions.append(one_name)
+        for one_namespace in test_serialization:
+            namespace.update(one_namespace)
+        for one_name in test_deletions:
+            del namespace[one_name]
+        return type.__new__(mcs, name, bases, namespace)
+
+
+class TestBatchRenamer(unittest.TestCase, metaclass=MetaCreateSerializedTests):
 
     # Store original sys.argv because some tests override those to simulate CLI
     # calls.
@@ -164,19 +186,15 @@ class TestBatchRenamer(unittest.TestCase):
         self.now = datetime.datetime.now()
         # Initialize excl_symbols_folder.
         populate_directory_with_files(
-            self.non_compliant_folder,
-            kwargs_create_random_string={'allowed_chars': NON_ALLOWED_SYMBOLS})
+            NON_ALLOWED_CHARS,
+            self.non_compliant_folder,)
         # Initialize compliant_names_folder.
         populate_directory_with_files(
-            self.compliant_folder,
-            kwargs_create_random_string={
-                'allowed_chars': string.ascii_lowercase})
+            ALLOWED_CHARS,
+            self.compliant_folder)
         # Initialize recursively populated directory.
-        recursive_populate_directory_with_dirs(
-            self.recursively_pop_dir,
-            kwargs_create_random_string={
-                'min_len': 1,
-                'max_len': 5})
+        # recursive_populate_directory_with_dirs(
+            # self.recursively_pop_dir)
         # Create historyfile.
         self.historyfile = os.path.join(self.config_folder, 'historyfile.txt')
         os.mknod(self.historyfile)
@@ -321,5 +339,3 @@ class TestBatchRenamerRevert(TestBatchRenamer):
 if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromTestCase(TestBatchRenamer)
     unittest.TextTestRunner(verbosity=2).run(suite)
-    # print(create_string_from_set('abcde', 100))
-    # print(add_trailing_number(list('abcdefghijklmonopqrst')))
