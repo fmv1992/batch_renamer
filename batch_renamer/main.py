@@ -132,10 +132,10 @@ def write_header_to_historyfile(historyfile):
 def get_range_from_history_file(args):
     if args.revert == 'last':
         start_change_number = get_last_id_from_change_in_historyfile(
-            historyfile) + 1
+            args.historyfile)
         end_change_number = None
     else:
-        start_change_number = args.revert + 1
+        start_change_number = args.revert
         with open(args.historyfile, 'rt') as f:
             for i, line in enumerate(
                     f.read().splitlines()[start_change_number:],
@@ -270,7 +270,7 @@ def check_arguments(args):
     if not (bool(args.input) ^ bool(args.revert)):
         raise ValueError(
             "The '--input' ({0}) and '--revert' ({1}) flags shall not be "
-            "specified togeter")
+            "specified togeter".format(args.input, args.revert))
 
     # In both cases history file must be mentioned.
     if not os.path.isfile(args.historyfile):
@@ -361,7 +361,7 @@ def revert_rename_files(args):
     map_of_tuples_to_be_renamed = get_rename_changes_from_historyfile(
         args.historyfile, change_range)
 
-    old_names, new_names = zip(map_of_tuples_to_be_renamed)
+    old_names, new_names = zip(*map_of_tuples_to_be_renamed)
 
     execute_renaming(old_names, new_names, args)
 

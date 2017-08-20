@@ -122,7 +122,6 @@ def recursive_populate_directory_with_files(
         lambda x: x[0],
         os.walk(root_dir))
 
-
     for one_dir in all_directories:
         populate_directory_with_files(
             charset,
@@ -161,47 +160,56 @@ class TestBatchRenamer(unittest.TestCase, metaclass=MetaCreateSerializedTests):
     # calls.
     _original_sys_argv = sys.argv.copy()
 
+    # Setup functions.
     def setUp(self):
         self._program_folder = tempfile.TemporaryDirectory()
         self.program_folder = os.path.abspath(self._program_folder.name)
+
+        self.now = datetime.datetime.now()
+
+    def setup_working_folder(self):
+        # Create the working/renaming folder.
+        self.working_folder = os.path.join(self.program_folder,
+                                           'working_folder')
+        os.mkdir(self.working_folder)
+
+    def setup_config_folder(self):
         # Create the config folder.
         self.config_folder = os.path.abspath(os.path.join(
             self.program_folder,
             'config_folder'))
-        # TODO: Populate the config folder.
         os.mkdir(self.config_folder)
-        self.compliant_folder = os.path.abspath(os.path.join(
-            self.program_folder,
-            'compliant_folder'))
-        os.mkdir(self.compliant_folder)
-        self.non_compliant_folder = os.path.abspath(os.path.join(
-            self.program_folder,
-            'non_compliant_folder'))
-        os.mkdir(self.non_compliant_folder)
-        self.recursively_pop_dir = os.path.abspath(os.path.join(
-            self.program_folder,
-            'recursively_pop_dir'))
-        os.mkdir(self.recursively_pop_dir)
-        # TODO: May help with 'test_prefix_iso_mod_date'.
-        self.now = datetime.datetime.now()
-        # Initialize excl_symbols_folder.
-        populate_directory_with_files(
-            NON_ALLOWED_CHARS,
-            self.non_compliant_folder,)
-        # Initialize compliant_names_folder.
-        populate_directory_with_files(
-            ALLOWED_CHARS,
-            self.compliant_folder)
-        # Initialize recursively populated directory.
-        # recursive_populate_directory_with_dirs(
-            # self.recursively_pop_dir)
-        # Create historyfile.
+        # Create historyfile in config folder.
         self.historyfile = os.path.join(self.config_folder, 'historyfile.txt')
         os.mknod(self.historyfile)
-        # Create excludepatternfile.
+        # Create excludepatternfile in config folder.
         self.excludepatternfile = os.path.join(self.config_folder,
                                                'excludepatternfile.txt')
         os.mknod(self.excludepatternfile)
+
+    def setup_compliant_folder(self):
+
+        self.setup_working_folder()
+
+        self.compliant_folder = os.path.abspath(os.path.join(
+            self.working_folder,
+            'compliant_folder'))
+        os.mkdir(self.compliant_folder)
+        populate_directory_with_files(
+            ALLOWED_CHARS,
+            self.compliant_folder)
+
+    def setup_non_compliant_folder(self):
+
+        self.setup_working_folder()
+
+        self.non_compliant_folder = os.path.abspath(os.path.join(
+            self.working_folder,
+            'non_compliant_folder'))
+        os.mkdir(self.non_compliant_folder)
+        populate_directory_with_files(
+            NON_ALLOWED_CHARS,
+            self.non_compliant_folder,)
 
     def tearDown(self):
         # os.system('tree ' + self.program_folder)
@@ -212,6 +220,7 @@ class TestBatchRenamer(unittest.TestCase, metaclass=MetaCreateSerializedTests):
     def emulate_cli_arguments(
             self,
             arg_input=None,
+            arg_revert=None,
             arg_historyfile=None,
             arg_excludepatternfile=None,
             arg_verbose=None,
@@ -220,22 +229,29 @@ class TestBatchRenamer(unittest.TestCase, metaclass=MetaCreateSerializedTests):
         # Intercept created arguments.
         new_sys_argv = []
         # Input.
-        new_sys_argv.append('--input')
-        new_sys_argv.append(arg_input)
+        if arg_input is not None:
+            new_sys_argv.append('--input')
+            new_sys_argv.append(arg_input)
+        # Input.
+        if arg_revert is not None:
+            new_sys_argv.append('--revert')
+            new_sys_argv.append(arg_revert)
         # History file.
-        new_sys_argv.append('--historyfile')
-        new_sys_argv.append(arg_historyfile)
+        if arg_historyfile is not None:
+            new_sys_argv.append('--historyfile')
+            new_sys_argv.append(arg_historyfile)
         # Exclude pattern file.
-        new_sys_argv.append('--excludepatternfile')
-        new_sys_argv.append(arg_excludepatternfile)
+        if arg_excludepatternfile is not None:
+            new_sys_argv.append('--excludepatternfile')
+            new_sys_argv.append(arg_excludepatternfile)
         # Verbose.
-        if arg_verbose:
+        if arg_verbose is not None:
             new_sys_argv.append('--verbose')
         # Prefix with iso modification date.
-        if arg_prefixisomoddate:
+        if arg_prefixisomoddate is not None:
             new_sys_argv.append('--prefixisomoddate')
         # Dry run.
-        if arg_dryrun:
+        if arg_dryrun is not None:
             new_sys_argv.append('--dryrun')
         # Modify the system argv.
         sys.argv = [sys.argv[0], ] + new_sys_argv
@@ -259,6 +275,10 @@ class TestBatchRenamerNormal(TestBatchRenamer):
 
     # TODO: remove me and put some real tests up.
     def test_has_changed(self):
+
+        self.setup_config_folder()
+        self.setup_non_compliant_folder()
+
         before_hash = self.get_path_representation_hash(
             self.non_compliant_folder)
         # Put null regex on exclude pattern file.
@@ -323,6 +343,9 @@ class TestBatchRenamerNormal(TestBatchRenamer):
                 self.assertEqual(len(s), round(math.log(size, 10) + 2))
 
     def test_prefix_iso_mod_date(self):
+
+        self.setup_compliant_folder()
+
         for file_path in filter(
                 os.path.isfile,
                 generate_folder_structure(self.compliant_folder)):
@@ -333,7 +356,53 @@ class TestBatchRenamerNormal(TestBatchRenamer):
 
 
 class TestBatchRenamerRevert(TestBatchRenamer):
-    pass
+
+    def test_simple_revert(self):
+
+        # Execute simple setup.
+        self.setup_non_compliant_folder()
+        self.setup_config_folder()
+
+        # os.system('tree ' + self.program_folder)  # XXX
+
+        # Compute first hash.
+        first_hash = self.get_path_representation_hash(
+            self.non_compliant_folder)
+
+        # Populate needed config files.
+        with open(self.excludepatternfile, 'wt') as eptf:
+            eptf.write('$^')
+
+        # Do a first run to rename the folder.
+        args = self.emulate_cli_arguments(
+            arg_input=self.non_compliant_folder,
+            arg_historyfile=self.historyfile,
+            arg_excludepatternfile=self.excludepatternfile)
+        brm.main(args)
+
+        second_hash = self.get_path_representation_hash(
+            self.non_compliant_folder)
+
+        # Execute the first assertion.
+        self.assertNotEqual(first_hash, second_hash)
+
+        # Restore renamed folder.
+        args = self.emulate_cli_arguments(
+            arg_input=None,
+            arg_revert='last',
+            arg_historyfile=self.historyfile,
+            arg_excludepatternfile=self.excludepatternfile)
+        brm.main(args)
+
+        third_hash = self.get_path_representation_hash(
+            self.non_compliant_folder)
+
+        # import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+        # os.system('tree ' + self.program_folder)  # XXX
+
+        # Execute the first assertion.
+        self.assertEqual(first_hash, third_hash)
+
 
 
 if __name__ == "__main__":
