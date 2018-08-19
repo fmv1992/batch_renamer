@@ -22,8 +22,10 @@ import time
 import collections
 import re
 
-from .batch_renamer import primitive_name, add_trailing_number, \
-    filter_out_paths_to_be_renamed, directory_generation_starting_from_files
+from batch_renamer import (
+    primitive_name, add_trailing_number,
+    filter_out_paths_to_be_renamed,
+    directory_generation_starting_from_files)
 
 
 # # pylama:skip=1
