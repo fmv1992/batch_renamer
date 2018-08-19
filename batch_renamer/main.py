@@ -54,6 +54,10 @@ def load_exclude_pattern_file(cli_args):
 
 
 def deduplicate_names(names):
+    # TODO: cover the case when the basenamed file already exists.
+    # In this case an extra duplicated index should be appended then removed to
+    # prevent overwritting of the file that already exists.
+
     # Solve the duplicate names problem by first creating a default dict whose
     # keys (primitive names) point to the number of indexes. By filtering ones
     # with more than one index one can find out the duplicate names.
@@ -73,6 +77,10 @@ def deduplicate_names(names):
 
 
 def execute_renaming(old_names, new_names, args):
+        # TODO: improve the security of this function. All of the new_names
+        # shall be unique.
+        # All of the new names shall not yet exist.
+
         list_of_file_renamings = []
         for src, dst in zip(old_names, new_names):
             if os.path.exists(dst):

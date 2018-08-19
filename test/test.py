@@ -28,9 +28,10 @@ PATH_RESERVED_SYMBOLS = set(('\\', '/'))
 NON_ALLOWED_SYMBOLS = (set(string.punctuation)
                        - (ALLOWED_SYMBOLS | PATH_RESERVED_SYMBOLS))
 NON_ALLOWED_CHARS = set(string.ascii_uppercase)
+NON_ALLOWED = NON_ALLOWED_SYMBOLS | NON_ALLOWED_CHARS
 
 # Number of tests to run.
-N = 10  # Number of strings in each folder.
+N = 1  # Number of strings in each folder.
 
 
 def create_random_string(charset,
@@ -107,9 +108,10 @@ def recursive_populate_directory_with_dirs(
                 charset,
                 one_dir,
                 **kwargs_populate_directory_with_dirs)
-            for new_dirs in filter(os.path.isdir,
-                                   os.listdir(one_dir)):
-                update_dirs_to_populate.append(os.path.join(one_dir, new_dirs))
+            for new_dir in filter(
+                    os.path.isdir,
+                    (os.path.join(one_dir, x) for x in os.listdir(one_dir))):
+                update_dirs_to_populate.append(new_dir)
         dirs_to_populate = update_dirs_to_populate.copy()
 
 
@@ -207,9 +209,9 @@ class TestBatchRenamer(unittest.TestCase, metaclass=MetaCreateSerializedTests):
             self.working_folder,
             'non_compliant_folder'))
         os.mkdir(self.non_compliant_folder)
-        populate_directory_with_files(
-            NON_ALLOWED_CHARS,
-            self.non_compliant_folder,)
+        recursive_populate_directory_with_dirs(
+            NON_ALLOWED,
+            self.non_compliant_folder)
 
     def tearDown(self):
         # os.system('tree ' + self.program_folder)
